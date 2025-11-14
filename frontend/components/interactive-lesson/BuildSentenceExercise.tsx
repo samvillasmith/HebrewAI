@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { BuildSentenceItem } from '@/types/interactive-lesson'
 import { Volume2, RotateCw, Check, X } from 'lucide-react'
+import { useGender } from '@/contexts/GenderContext'
+import { resolveGenderedText, resolveGenderedArray } from '@/lib/gender-utils'
+import { playGenderedAudio } from '@/lib/tts-utils'
 
 interface BuildSentenceExerciseProps {
   item: BuildSentenceItem
@@ -15,6 +18,7 @@ export default function BuildSentenceExercise({
   item,
   onCorrect
 }: BuildSentenceExerciseProps) {
+  const { gender } = useGender()
   const [selectedWords, setSelectedWords] = useState<string[]>([])
   const [availableWords, setAvailableWords] = useState<string[]>([])
   const [showFeedback, setShowFeedback] = useState(false)
@@ -22,9 +26,15 @@ export default function BuildSentenceExercise({
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
+  // Resolve gendered text
+  const text = resolveGenderedText(item.text, gender)
+  const translation = resolveGenderedText(item.translation, gender)
+  const words = resolveGenderedArray(item.words, gender)
+  const correctOrder = resolveGenderedArray(item.correctOrder, gender)
+
   useEffect(() => {
     // Shuffle available words
-    const shuffled = [...item.words].sort(() => Math.random() - 0.5)
+    const shuffled = [...words].sort(() => Math.random() - 0.5)
     setAvailableWords(shuffled)
     playAudio()
 
@@ -40,7 +50,7 @@ export default function BuildSentenceExercise({
         audioRef.current = null
       }
     }
-  }, [])
+  }, [gender]) // Re-shuffle when gender changes
 
   const playAudio = async () => {
     try {
@@ -59,21 +69,15 @@ export default function BuildSentenceExercise({
       const abortController = new AbortController()
       abortControllerRef.current = abortController
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-      const response = await fetch(`${apiUrl}/api/tts/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: item.text, language: 'he' }),
-        signal: abortController.signal
+      // Use the gender-aware audio playback
+      const audio = await playGenderedAudio({
+        text: item.text,
+        gender,
+        language: 'he',
+        abortSignal: abortController.signal
       })
 
-      if (response.ok) {
-        const audioBlob = await response.blob()
-        const audioUrl = URL.createObjectURL(audioBlob)
-        const audio = new Audio(audioUrl)
-        audioRef.current = audio
-        await audio.play()
-      }
+      audioRef.current = audio
     } catch (error) {
       // Ignore abort errors
       if (error instanceof Error && error.name === 'AbortError') {
@@ -99,7 +103,7 @@ export default function BuildSentenceExercise({
   }
 
   const handleCheck = () => {
-    const correct = JSON.stringify(selectedWords) === JSON.stringify(item.correctOrder)
+    const correct = JSON.stringify(selectedWords) === JSON.stringify(correctOrder)
     setIsCorrect(correct)
     setShowFeedback(true)
 
@@ -127,7 +131,7 @@ export default function BuildSentenceExercise({
         </Button>
 
         <p className="text-lg text-gray-600">
-          Translation: <span className="font-medium">{item.translation}</span>
+          Translation: <span className="font-medium">{translation}</span>
         </p>
       </div>
 
@@ -199,7 +203,7 @@ export default function BuildSentenceExercise({
           </p>
           {isCorrect && (
             <p className="text-sm text-gray-600">
-              {item.correctOrder.join(' ')}
+              {correctOrder.join(' ')}
             </p>
           )}
         </div>
@@ -211,7 +215,7 @@ export default function BuildSentenceExercise({
           variant="outline"
           onClick={() => {
             setSelectedWords([])
-            setAvailableWords([...item.words].sort(() => Math.random() - 0.5))
+            setAvailableWords([...words].sort(() => Math.random() - 0.5))
             setShowFeedback(false)
           }}
         >

@@ -84,11 +84,17 @@ export const cafeLessonData: InteractiveLessonData = {
       id: '5',
       type: 'vocabulary_intro',
       data: {
-        hebrew: 'אֲנִי רוֹצֶה',
-        transliteration: 'ani rotze (m) / rotzá (f)',
+        hebrew: {
+          male: 'אֲנִי רוֹצֶה',
+          female: 'אֲנִי רוֹצָה'
+        },
+        transliteration: {
+          male: 'ani rotze',
+          female: 'ani rotzá'
+        },
         english: 'I want',
         image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&h=300&fit=crop',
-        note: 'Use רוֹצֶה (rotze) if you\'re male, רוֹצָה (rotzá) if you\'re female'
+        note: 'The verb "want" changes based on gender in Hebrew'
       }
     },
 
@@ -124,10 +130,23 @@ export const cafeLessonData: InteractiveLessonData = {
       type: 'build_sentence',
       data: {
         audio: 'ani rotze kafé, bevakashá',
-        text: 'אֲנִי רוֹצֶה קָפֶה, בְּבַקָּשָׁה',
+        text: {
+          male: 'אֲנִי רוֹצֶה קָפֶה, בְּבַקָּשָׁה',
+          female: 'אֲנִי רוֹצָה קָפֶה, בְּבַקָּשָׁה'
+        },
         translation: 'I want coffee, please',
-        words: ['אֲנִי', 'רוֹצֶה', 'קָפֶה', 'בְּבַקָּשָׁה'],
-        correctOrder: ['אֲנִי', 'רוֹצֶה', 'קָפֶה', 'בְּבַקָּשָׁה']
+        words: [
+          'אֲנִי',
+          { male: 'רוֹצֶה', female: 'רוֹצָה' },
+          'קָפֶה',
+          'בְּבַקָּשָׁה'
+        ],
+        correctOrder: [
+          'אֲנִי',
+          { male: 'רוֹצֶה', female: 'רוֹצָה' },
+          'קָפֶה',
+          'בְּבַקָּשָׁה'
+        ]
       }
     },
 
@@ -136,7 +155,10 @@ export const cafeLessonData: InteractiveLessonData = {
       id: '9',
       type: 'fill_in_blank',
       data: {
-        sentence: 'אֲנִי רוֹצֶה ___',
+        sentence: {
+          male: 'אֲנִי רוֹצֶה ___',
+          female: 'אֲנִי רוֹצָה ___'
+        },
         translation: 'I want ________',
         blankIndex: 2,
         options: ['מַיִם', 'קָפֶה', 'תֵּה'],
@@ -165,16 +187,25 @@ export const cafeLessonData: InteractiveLessonData = {
         image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=600&h=400&fit=crop',
         speakerLine: {
           speaker: 'Barista',
-          hebrew: 'מָה אַתָּה רוֹצֶה?',
+          hebrew: {
+            male: 'מָה אַתָּה רוֹצֶה?',
+            female: 'מָה אַתְּ רוֹצָה?'
+          },
           english: 'What do you want?'
         },
         options: [
           {
-            hebrew: 'אֲנִי רוֹצֶה קָפֶה',
+            hebrew: {
+              male: 'אֲנִי רוֹצֶה קָפֶה',
+              female: 'אֲנִי רוֹצָה קָפֶה'
+            },
             english: 'I want coffee'
           },
           {
-            hebrew: 'אֲנִי רוֹצֶה מַיִם',
+            hebrew: {
+              male: 'אֲנִי רוֹצֶה מַיִם',
+              female: 'אֲנִי רוֹצָה מַיִם'
+            },
             english: 'I want water'
           }
         ],

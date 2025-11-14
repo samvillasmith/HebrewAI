@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { SpeakingPracticeItem } from '@/types/interactive-lesson'
 import { Volume2, Mic } from 'lucide-react'
+import { useGender } from '@/contexts/GenderContext'
+import { resolveGenderedText } from '@/lib/gender-utils'
+import { playGenderedAudio } from '@/lib/tts-utils'
 
 interface SpeakingPracticeExerciseProps {
   item: SpeakingPracticeItem
@@ -15,29 +18,22 @@ export default function SpeakingPracticeExercise({
   item,
   onComplete
 }: SpeakingPracticeExerciseProps) {
+  const { gender } = useGender()
   const [isListening, setIsListening] = useState(false)
   const [feedback, setFeedback] = useState<string | null>(null)
 
+  // Resolve gendered text
+  const hebrew = resolveGenderedText(item.hebrew, gender)
+  const transliteration = resolveGenderedText(item.transliteration, gender)
+
   const playAudio = async () => {
     try {
-      if (item.audioUrl) {
-        const audio = new Audio(item.audioUrl)
-        await audio.play()
-      } else {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-        const response = await fetch(`${apiUrl}/api/tts/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: item.hebrew, language: 'he' }),
-        })
-
-        if (response.ok) {
-          const audioBlob = await response.blob()
-          const audioUrl = URL.createObjectURL(audioBlob)
-          const audio = new Audio(audioUrl)
-          await audio.play()
-        }
-      }
+      await playGenderedAudio({
+        text: item.hebrew,
+        gender,
+        language: 'he',
+        audioUrl: item.audioUrl
+      })
     } catch (error) {
       console.error('Error playing audio:', error)
     }
@@ -68,10 +64,10 @@ export default function SpeakingPracticeExercise({
       <Card className="w-full max-w-2xl">
         <CardContent className="p-8 text-center space-y-4">
           <p className="text-5xl font-bold hebrew-text text-indigo-600">
-            {item.hebrew}
+            {hebrew}
           </p>
           <p className="text-2xl text-gray-600 italic">
-            {item.transliteration}
+            {transliteration}
           </p>
           <p className="text-xl text-gray-700">
             {item.english}

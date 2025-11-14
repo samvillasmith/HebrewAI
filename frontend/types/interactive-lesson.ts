@@ -10,9 +10,17 @@ export type InteractiveExerciseType =
   | 'dialogue_completion'
   | 'listen_and_type'
 
+export type Gender = 'male' | 'female'
+
+// Gendered text can be a simple string (gender-neutral) or an object with male/female variants
+export type GenderedText = string | {
+  male: string
+  female: string
+}
+
 export interface VocabularyItem {
-  hebrew: string
-  transliteration: string
+  hebrew: GenderedText
+  transliteration: GenderedText
   english: string
   image?: string
   audioUrl?: string
@@ -21,7 +29,7 @@ export interface VocabularyItem {
 
 export interface ListenAndSelectItem {
   audio: string
-  text: string
+  text: GenderedText
   options: {
     image: string
     label: string
@@ -31,30 +39,30 @@ export interface ListenAndSelectItem {
 }
 
 export interface MatchPairItem {
-  left: string
+  left: GenderedText
   right: string
 }
 
 export interface BuildSentenceItem {
   audio: string
-  text: string
-  translation: string
-  words: string[]
-  correctOrder: string[]
+  text: GenderedText
+  translation: GenderedText
+  words: GenderedText[]
+  correctOrder: GenderedText[]
 }
 
 export interface FillInBlankItem {
-  sentence: string
-  translation: string
+  sentence: GenderedText
+  translation: GenderedText
   blankIndex: number
-  options: string[]
-  correctAnswer: string
+  options: GenderedText[]
+  correctAnswer: GenderedText
   image?: string
 }
 
 export interface SpeakingPracticeItem {
-  hebrew: string
-  transliteration: string
+  hebrew: GenderedText
+  transliteration: GenderedText
   english: string
   audioUrl?: string
 }
@@ -64,11 +72,11 @@ export interface DialogueCompletionItem {
   image?: string
   speakerLine: {
     speaker: string
-    hebrew: string
+    hebrew: GenderedText
     english: string
   }
   options: {
-    hebrew: string
+    hebrew: GenderedText
     english: string
   }[]
   correctAnswer: number
@@ -76,7 +84,7 @@ export interface DialogueCompletionItem {
 
 export interface ListenAndTypeItem {
   audio: string
-  text: string
+  text: GenderedText
   translationHint: string
 }
 

@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ListenAndSelectItem } from '@/types/interactive-lesson'
 import { Volume2, RotateCw, Check, X } from 'lucide-react'
+import { useGender } from '@/contexts/GenderContext'
+import { resolveGenderedText } from '@/lib/gender-utils'
+import { playGenderedAudio } from '@/lib/tts-utils'
 
 interface ListenAndSelectExerciseProps {
   item: ListenAndSelectItem
@@ -15,11 +18,15 @@ export default function ListenAndSelectExercise({
   item,
   onCorrect
 }: ListenAndSelectExerciseProps) {
+  const { gender } = useGender()
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [showFeedback, setShowFeedback] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+
+  // Resolve gendered text
+  const text = resolveGenderedText(item.text, gender)
 
   useEffect(() => {
     playAudio()
@@ -55,22 +62,15 @@ export default function ListenAndSelectExercise({
       const abortController = new AbortController()
       abortControllerRef.current = abortController
 
-      // Play audio from TTS or audioUrl
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-      const response = await fetch(`${apiUrl}/api/tts/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: item.text, language: 'he' }),
-        signal: abortController.signal
+      // Use the gender-aware audio playback
+      const audio = await playGenderedAudio({
+        text: item.text,
+        gender,
+        language: 'he',
+        abortSignal: abortController.signal
       })
 
-      if (response.ok) {
-        const audioBlob = await response.blob()
-        const audioUrl = URL.createObjectURL(audioBlob)
-        const audio = new Audio(audioUrl)
-        audioRef.current = audio
-        await audio.play()
-      }
+      audioRef.current = audio
     } catch (error) {
       // Ignore abort errors
       if (error instanceof Error && error.name === 'AbortError') {

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import InteractiveLesson from '@/components/interactive-lesson/InteractiveLesson'
 import { InteractiveLessonData } from '@/types/interactive-lesson'
 import { cafeLessonData } from '@/data/cafe-lesson'
+import { GenderProvider } from '@/contexts/GenderContext'
 
 export default function InteractiveLessonPage({ params }: { params: { id: string } }) {
   const [lessonData, setLessonData] = useState<InteractiveLessonData | null>(null)
@@ -62,5 +63,9 @@ export default function InteractiveLessonPage({ params }: { params: { id: string
     )
   }
 
-  return <InteractiveLesson lessonData={lessonData} showPreReview={true} />
+  return (
+    <GenderProvider>
+      <InteractiveLesson lessonData={lessonData} showPreReview={true} />
+    </GenderProvider>
+  )
 }

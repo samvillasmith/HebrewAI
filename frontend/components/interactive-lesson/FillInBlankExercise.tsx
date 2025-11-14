@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { FillInBlankItem } from '@/types/interactive-lesson'
 import { Check, X } from 'lucide-react'
+import { useGender } from '@/contexts/GenderContext'
+import { resolveGenderedText, resolveGenderedArray } from '@/lib/gender-utils'
 
 interface FillInBlankExerciseProps {
   item: FillInBlankItem
@@ -15,18 +17,25 @@ export default function FillInBlankExercise({
   item,
   onCorrect
 }: FillInBlankExerciseProps) {
+  const { gender } = useGender()
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [showFeedback, setShowFeedback] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
 
+  // Resolve gendered text
+  const sentence = resolveGenderedText(item.sentence, gender)
+  const translation = resolveGenderedText(item.translation, gender)
+  const options = resolveGenderedArray(item.options, gender)
+  const correctAnswer = resolveGenderedText(item.correctAnswer, gender)
+
   // Split sentence into parts around the blank
-  const sentenceParts = item.sentence.split('___')
+  const sentenceParts = sentence.split('___')
 
   const handleSelect = (answer: string) => {
     if (showFeedback) return
 
     setSelectedAnswer(answer)
-    const correct = answer === item.correctAnswer
+    const correct = answer === correctAnswer
     setIsCorrect(correct)
     setShowFeedback(true)
 
@@ -84,7 +93,7 @@ export default function FillInBlankExercise({
 
             {/* English Translation */}
             <p className="text-center text-gray-600">
-              ({item.translation})
+              ({translation})
             </p>
           </div>
         </CardContent>
@@ -92,7 +101,7 @@ export default function FillInBlankExercise({
 
       {/* Options */}
       <div className="flex gap-4 justify-center flex-wrap max-w-2xl">
-        {item.options.map((option, index) => (
+        {options.map((option, index) => (
           <Button
             key={index}
             variant="outline"

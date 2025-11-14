@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { VocabularyItem } from '@/types/interactive-lesson'
 import { Volume2 } from 'lucide-react'
+import { useGender } from '@/contexts/GenderContext'
+import { resolveGenderedText } from '@/lib/gender-utils'
+import { playGenderedAudio } from '@/lib/tts-utils'
 
 interface VocabularyIntroProps {
   item: VocabularyItem
@@ -17,15 +20,20 @@ export default function VocabularyIntro({
   onContinue,
   autoPlayAudio = true
 }: VocabularyIntroProps) {
+  const { gender } = useGender()
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+
+  // Resolve gendered text
+  const hebrew = resolveGenderedText(item.hebrew, gender)
+  const transliteration = resolveGenderedText(item.transliteration, gender)
 
   useEffect(() => {
     if (autoPlayAudio) {
       playAudio()
     }
 
-    // Cleanup function to stop audio when component unmounts or item changes
+    // Cleanup function to stop audio when component unmounts or item/gender changes
     return () => {
       // Abort any in-flight fetch requests
       if (abortControllerRef.current) {
@@ -37,7 +45,7 @@ export default function VocabularyIntro({
         audioRef.current = null
       }
     }
-  }, [item.hebrew])
+  }, [hebrew]) // Depend on resolved hebrew text which changes with gender
 
   const playAudio = async () => {
     try {
@@ -52,32 +60,20 @@ export default function VocabularyIntro({
         audioRef.current = null
       }
 
-      if (item.audioUrl) {
-        const audio = new Audio(item.audioUrl)
-        audioRef.current = audio
-        await audio.play()
-      } else {
-        // Create new AbortController for this request
-        const abortController = new AbortController()
-        abortControllerRef.current = abortController
+      // Create new AbortController for this request
+      const abortController = new AbortController()
+      abortControllerRef.current = abortController
 
-        // Fallback to TTS
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-        const response = await fetch(`${apiUrl}/api/tts/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: item.hebrew, language: 'he' }),
-          signal: abortController.signal
-        })
+      // Use the gender-aware audio playback
+      const audio = await playGenderedAudio({
+        text: item.hebrew,
+        gender,
+        language: 'he',
+        audioUrl: item.audioUrl,
+        abortSignal: abortController.signal
+      })
 
-        if (response.ok) {
-          const audioBlob = await response.blob()
-          const audioUrl = URL.createObjectURL(audioBlob)
-          const audio = new Audio(audioUrl)
-          audioRef.current = audio
-          await audio.play()
-        }
-      }
+      audioRef.current = audio
     } catch (error) {
       // Ignore abort errors
       if (error instanceof Error && error.name === 'AbortError') {
@@ -108,13 +104,13 @@ export default function VocabularyIntro({
         >
           <Volume2 className="w-8 h-8 text-indigo-600" />
           <p className="text-6xl font-bold hebrew-text text-indigo-600">
-            {item.hebrew}
+            {hebrew}
           </p>
         </div>
 
         {/* Transliteration */}
         <p className="text-2xl text-gray-600 italic">
-          {item.transliteration}
+          {transliteration}
         </p>
 
         {/* English Translation */}

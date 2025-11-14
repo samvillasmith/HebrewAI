@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { DialogueCompletionItem } from '@/types/interactive-lesson'
 import { Check, X } from 'lucide-react'
+import { useGender } from '@/contexts/GenderContext'
+import { resolveGenderedText } from '@/lib/gender-utils'
 
 interface DialogueCompletionExerciseProps {
   item: DialogueCompletionItem
@@ -15,9 +17,17 @@ export default function DialogueCompletionExercise({
   item,
   onCorrect
 }: DialogueCompletionExerciseProps) {
+  const { gender } = useGender()
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [showFeedback, setShowFeedback] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
+
+  // Resolve gendered text
+  const speakerHebrew = resolveGenderedText(item.speakerLine.hebrew, gender)
+  const options = item.options.map(opt => ({
+    hebrew: resolveGenderedText(opt.hebrew, gender),
+    english: opt.english
+  }))
 
   const handleSelect = (index: number) => {
     if (showFeedback) return
