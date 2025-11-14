@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { VocabularyItem } from '@/types/interactive-lesson'
@@ -17,35 +17,72 @@ export default function VocabularyIntro({
   onContinue,
   autoPlayAudio = true
 }: VocabularyIntroProps) {
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     if (autoPlayAudio) {
       playAudio()
     }
+
+    // Cleanup function to stop audio when component unmounts or item changes
+    return () => {
+      // Abort any in-flight fetch requests
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+      // Stop any playing audio
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current = null
+      }
+    }
   }, [item.hebrew])
 
   const playAudio = async () => {
     try {
+      // Abort any previous fetch
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+
+      // Stop any currently playing audio
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current = null
+      }
+
       if (item.audioUrl) {
         const audio = new Audio(item.audioUrl)
+        audioRef.current = audio
         await audio.play()
       } else {
+        // Create new AbortController for this request
+        const abortController = new AbortController()
+        abortControllerRef.current = abortController
+
         // Fallback to TTS
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
         const response = await fetch(`${apiUrl}/api/tts/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: item.hebrew, language: 'he' }),
+          signal: abortController.signal
         })
 
         if (response.ok) {
           const audioBlob = await response.blob()
           const audioUrl = URL.createObjectURL(audioBlob)
           const audio = new Audio(audioUrl)
+          audioRef.current = audio
           await audio.play()
         }
       }
     } catch (error) {
+      // Ignore abort errors
+      if (error instanceof Error && error.name === 'AbortError') {
+        return
+      }
       console.error('Error playing audio:', error)
     }
   }

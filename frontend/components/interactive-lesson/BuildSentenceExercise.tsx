@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { BuildSentenceItem } from '@/types/interactive-lesson'
@@ -19,30 +19,66 @@ export default function BuildSentenceExercise({
   const [availableWords, setAvailableWords] = useState<string[]>([])
   const [showFeedback, setShowFeedback] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     // Shuffle available words
     const shuffled = [...item.words].sort(() => Math.random() - 0.5)
     setAvailableWords(shuffled)
     playAudio()
+
+    // Cleanup function to stop audio when component unmounts
+    return () => {
+      // Abort any in-flight fetch requests
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+      // Stop any playing audio
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current = null
+      }
+    }
   }, [])
 
   const playAudio = async () => {
     try {
+      // Abort any previous fetch
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+
+      // Stop any currently playing audio
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current = null
+      }
+
+      // Create new AbortController for this request
+      const abortController = new AbortController()
+      abortControllerRef.current = abortController
+
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
       const response = await fetch(`${apiUrl}/api/tts/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: item.text, language: 'he' }),
+        signal: abortController.signal
       })
 
       if (response.ok) {
         const audioBlob = await response.blob()
         const audioUrl = URL.createObjectURL(audioBlob)
         const audio = new Audio(audioUrl)
+        audioRef.current = audio
         await audio.play()
       }
     } catch (error) {
+      // Ignore abort errors
+      if (error instanceof Error && error.name === 'AbortError') {
+        return
+      }
       console.error('Error playing audio:', error)
     }
   }
