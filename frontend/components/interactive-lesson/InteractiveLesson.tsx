@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
 import { InteractiveLessonData, InteractiveExercise } from '@/types/interactive-lesson'
 import Link from 'next/link'
+import { useGender } from '@/contexts/GenderContext'
+import { resolveGenderedText } from '@/lib/gender-utils'
 
 // Screen components
 import LessonIntroScreen from './LessonIntroScreen'
@@ -38,6 +40,7 @@ export default function InteractiveLesson({
   showPreReview = true,
   reviewWordsCount = 5
 }: InteractiveLessonProps) {
+  const { gender } = useGender()
   const [stage, setStage] = useState<LessonStage>(showPreReview ? 'pre-review' : 'intro')
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0)
   const [startTime, setStartTime] = useState<number>(Date.now())
@@ -65,8 +68,12 @@ export default function InteractiveLesson({
     // Add vocabulary if it's a vocabulary intro
     if (currentExercise.type === 'vocabulary_intro') {
       const vocabData = currentExercise.data as any
-      if (vocabData.hebrew && !completedVocabulary.includes(vocabData.hebrew)) {
-        setCompletedVocabulary([...completedVocabulary, vocabData.hebrew])
+      if (vocabData.hebrew) {
+        // Resolve gendered text before storing
+        const resolvedHebrew = resolveGenderedText(vocabData.hebrew, gender)
+        if (!completedVocabulary.includes(resolvedHebrew)) {
+          setCompletedVocabulary([...completedVocabulary, resolvedHebrew])
+        }
       }
     }
 

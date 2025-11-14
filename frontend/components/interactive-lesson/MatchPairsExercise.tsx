@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { MatchPairItem } from '@/types/interactive-lesson'
 import { Check } from 'lucide-react'
+import { useGender } from '@/contexts/GenderContext'
+import { resolveGenderedText } from '@/lib/gender-utils'
 
 interface MatchPairsExerciseProps {
   pairs: MatchPairItem[]
@@ -14,6 +16,7 @@ export default function MatchPairsExercise({
   pairs,
   onComplete
 }: MatchPairsExerciseProps) {
+  const { gender } = useGender()
   const [leftItems, setLeftItems] = useState<string[]>([])
   const [rightItems, setRightItems] = useState<string[]>([])
   const [selected, setSelected] = useState<{ side: 'left' | 'right'; index: number } | null>(null)
@@ -21,11 +24,12 @@ export default function MatchPairsExercise({
   const [isComplete, setIsComplete] = useState(false)
 
   useEffect(() => {
-    // Shuffle right items for challenge
+    // Resolve gendered text and shuffle right items for challenge
+    const resolvedLeft = pairs.map(p => resolveGenderedText(p.left, gender))
     const shuffledRight = [...pairs.map(p => p.right)].sort(() => Math.random() - 0.5)
-    setLeftItems(pairs.map(p => p.left))
+    setLeftItems(resolvedLeft)
     setRightItems(shuffledRight)
-  }, [pairs])
+  }, [pairs, gender])
 
   const handleSelect = (side: 'left' | 'right', index: number) => {
     // If already matched, ignore
@@ -42,8 +46,10 @@ export default function MatchPairsExercise({
       const leftValue = leftItems[leftIdx]
       const rightValue = rightItems[rightIdx]
 
-      // Find if this is a correct pair
-      const isCorrectPair = pairs.some(pair => pair.left === leftValue && pair.right === rightValue)
+      // Find if this is a correct pair by comparing resolved left value with right value
+      const isCorrectPair = pairs.some(pair =>
+        resolveGenderedText(pair.left, gender) === leftValue && pair.right === rightValue
+      )
 
       if (isCorrectPair) {
         const newMatches = new Map(matches)

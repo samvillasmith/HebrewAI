@@ -70,7 +70,7 @@ export default function DialogueCompletionExercise({
             <p className="font-semibold text-sm text-gray-600">{item.speakerLine.speaker}:</p>
             <div className="bg-white p-4 rounded-lg space-y-1">
               <p className="text-2xl hebrew-text font-medium text-indigo-600">
-                {item.speakerLine.hebrew}
+                {speakerHebrew}
               </p>
               <p className="text-sm text-gray-600">({item.speakerLine.english})</p>
             </div>
@@ -88,7 +88,7 @@ export default function DialogueCompletionExercise({
 
       {/* Options */}
       <div className="w-full max-w-2xl space-y-3">
-        {item.options.map((option, index) => (
+        {options.map((option, index) => (
           <Card
             key={index}
             className={`cursor-pointer transition-all ${
