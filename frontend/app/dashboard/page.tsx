@@ -114,7 +114,42 @@ export default function DashboardPage() {
         {/* Main Learning Area */}
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Lessons */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
+            {/* Featured Interactive Lesson */}
+            <Card className="border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 to-purple-50">
+              <CardHeader>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="px-3 py-1 bg-indigo-600 text-white rounded-full text-xs font-bold">NEW</span>
+                  <CardTitle>Interactive Lesson</CardTitle>
+                </div>
+                <CardDescription>Experience our new engaging lesson format!</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href="/interactive-lesson/cafe-1">
+                  <div className="p-6 border-2 border-white rounded-lg hover:bg-white/50 transition-colors cursor-pointer bg-white/30 backdrop-blur-sm">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="font-bold text-xl mb-1">📚 At the Café</h3>
+                        <p className="text-sm text-gray-700 mb-2">A1 Beginner • Lesson 4 • ~12 minutes</p>
+                        <p className="text-sm text-gray-600 mb-3">Learn how to order drinks and use polite expressions</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-indigo-700 font-medium">
+                      <span>✨ Interactive exercises</span>
+                      <span>•</span>
+                      <span>🎤 Speaking practice</span>
+                      <span>•</span>
+                      <span>🔊 Audio lessons</span>
+                    </div>
+                    <Button className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700">
+                      Start Lesson →
+                    </Button>
+                  </div>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Regular Lessons */}
             <Card>
               <CardHeader>
                 <CardTitle>Your Lessons</CardTitle>
