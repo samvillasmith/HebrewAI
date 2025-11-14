@@ -4,6 +4,11 @@ import { useEffect, useState } from 'react'
 import InteractiveLesson from '@/components/interactive-lesson/InteractiveLesson'
 import { InteractiveLessonData } from '@/types/interactive-lesson'
 import { cafeLessonData } from '@/data/cafe-lesson'
+import { alefBetPart1 } from '@/data/lessons/alef-bet-part-1'
+import { vowelsFinalForms } from '@/data/lessons/vowels-final-forms'
+import { essentialGreetings } from '@/data/lessons/essential-greetings'
+import { introductions } from '@/data/lessons/introductions'
+import { politeExpressions } from '@/data/lessons/polite-expressions'
 import { GenderProvider } from '@/contexts/GenderContext'
 
 export default function InteractiveLessonPage({ params }: { params: { id: string } }) {
@@ -17,10 +22,19 @@ export default function InteractiveLessonPage({ params }: { params: { id: string
 
   const loadLesson = async () => {
     try {
-      // For now, we'll use the hardcoded cafe lesson data
-      // In the future, you can fetch from API based on params.id
-      if (params.id === 'cafe-1' || params.id === 'at-the-cafe') {
-        setLessonData(cafeLessonData)
+      // Load lessons based on ID
+      const lessonMap: Record<string, InteractiveLessonData> = {
+        'cafe-1': cafeLessonData,
+        'at-the-cafe': cafeLessonData,
+        'alef-bet-part-1': alefBetPart1,
+        'vowels-final-forms': vowelsFinalForms,
+        'essential-greetings': essentialGreetings,
+        'introductions': introductions,
+        'polite-expressions': politeExpressions
+      }
+
+      if (lessonMap[params.id]) {
+        setLessonData(lessonMap[params.id])
       } else {
         // Try to fetch from API
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'

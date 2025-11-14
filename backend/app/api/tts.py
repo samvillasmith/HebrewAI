@@ -21,7 +21,8 @@ tts_client = texttospeech.TextToSpeechClient()
 class TTSRequest(BaseModel):
     text: str
     language: str = "he"  # Hebrew
-    voice: str = "he-IL-Wavenet-A"  # Google Cloud Hebrew voices: he-IL-Wavenet-A (female), he-IL-Wavenet-B (male), he-IL-Wavenet-C (female), he-IL-Wavenet-D (male)
+    voice: Optional[str] = None  # Optional: specific voice override
+    gender: Optional[str] = None  # "male" or "female" for automatic voice selection
 
 
 @router.post("/")
@@ -34,13 +35,27 @@ async def text_to_speech(request: TTSRequest):
         # Prepare the text input
         synthesis_input = texttospeech.SynthesisInput(text=request.text)
 
+        # Select voice based on gender or use explicit voice
+        if request.voice:
+            # Use explicitly specified voice
+            voice_name = request.voice
+        elif request.gender:
+            # Map gender to appropriate high-quality Wavenet voice
+            if request.gender.lower() == "male":
+                voice_name = "he-IL-Wavenet-B"  # Male voice
+            else:
+                voice_name = "he-IL-Wavenet-A"  # Female voice (default)
+        else:
+            # Default to female voice
+            voice_name = "he-IL-Wavenet-A"
+
         # Configure voice parameters for Hebrew
         # Extract language code from voice name (e.g., "he-IL-Wavenet-A" -> "he-IL")
-        language_code = "-".join(request.voice.split("-")[:2]) if "-" in request.voice else "he-IL"
+        language_code = "-".join(voice_name.split("-")[:2]) if "-" in voice_name else "he-IL"
 
         voice = texttospeech.VoiceSelectionParams(
             language_code=language_code,
-            name=request.voice,
+            name=voice_name,
         )
 
         # Configure audio output with high quality

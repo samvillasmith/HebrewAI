@@ -143,7 +143,7 @@ export const cafeLessonData: InteractiveLessonData = {
         hebrew: 'חַם',
         transliteration: 'kham',
         english: 'hot',
-        image: 'https://images.unsplash.com/photo-1587080266227-677cc2a4e76e?w=400&h=300&fit=crop',
+        image: 'https://images.unsplash.com/photo-1574643156929-51fa098b0394?w=400&h=300&fit=crop',
       }
     },
 
@@ -255,7 +255,7 @@ export const cafeLessonData: InteractiveLessonData = {
         blankIndex: 1,
         options: ['חַם', 'קַר'],
         correctAnswer: 'חַם',
-        image: 'https://images.unsplash.com/photo-1587080266227-677cc2a4e76e?w=400&h=300&fit=crop'
+        image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=300&fit=crop'
       }
     },
 
