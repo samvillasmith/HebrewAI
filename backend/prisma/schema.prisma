@@ -1,0 +1,108 @@
+// This is your Prisma schema file
+
+generator client {
+  provider             = "prisma-client-py"
+  recursive_type_depth = 5
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+}
+
+model User {
+  id             String          @id @default(cuid())
+  clerkId        String          @unique
+  email          String          @unique
+  firstName      String?
+  lastName       String?
+  imageUrl       String?
+  subscriptionId String?
+  isPremium      Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  progress       UserProgress?
+  conversations  Conversation[]
+  lessonProgress LessonProgress[]
+}
+
+model UserProgress {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentLevel    String   @default("A1") // A1, A2, B1
+  xpPoints        Int      @default(0)
+  streakDays      Int      @default(0)
+  lastActiveDate  DateTime @default(now())
+  lessonsComplete Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Lesson {
+  id          String           @id @default(cuid())
+  title       String
+  description String
+  level       String // A1, A2, B1
+  order       Int
+  content     Json // Structured lesson content
+  objectives  String[] // Learning objectives
+  vocabulary  Json // Vocabulary items with translations
+  grammar     Json? // Grammar points covered
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  progress    LessonProgress[]
+}
+
+model LessonProgress {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId    String
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  isCompleted Boolean  @default(false)
+  progress    Int      @default(0) // 0-100
+  score       Int? // Quiz/exercise score
+  attempts    Int      @default(0)
+  lastAttempt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, lessonId])
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId  String?
+  messages  Message[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String // user, assistant, system
+  content        String       @db.Text
+  translation    String?      @db.Text
+  metadata       Json? // Additional metadata (corrections, pronunciation tips, etc.)
+  createdAt      DateTime     @default(now())
+}
+
+model VocabularyItem {
+  id           String   @id @default(cuid())
+  hebrew       String
+  english      String
+  transliteration String?
+  level        String // A1, A2, B1
+  category     String // greetings, family, numbers, etc.
+  exampleSentence String? @db.Text
+  audioUrl     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([level, category])
+}
