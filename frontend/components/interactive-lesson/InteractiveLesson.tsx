@@ -23,6 +23,7 @@ import FillInBlankExercise from './FillInBlankExercise'
 import SpeakingPracticeExercise from './SpeakingPracticeExercise'
 import DialogueCompletionExercise from './DialogueCompletionExercise'
 import ListenAndTypeExercise from './ListenAndTypeExercise'
+import DialogueWithBlanksExercise from './DialogueWithBlanksExercise'
 
 // Review prompt
 import ReviewPrompt from '../ReviewPrompt'
@@ -254,6 +255,14 @@ function renderExercise(exercise: InteractiveExercise, onComplete: () => void) {
     case 'listen_and_type':
       return (
         <ListenAndTypeExercise
+          item={exercise.data as any}
+          onCorrect={onComplete}
+        />
+      )
+
+    case 'dialogue_with_blanks':
+      return (
+        <DialogueWithBlanksExercise
           item={exercise.data as any}
           onCorrect={onComplete}
         />

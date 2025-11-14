@@ -9,6 +9,7 @@ export type InteractiveExerciseType =
   | 'speaking_practice'
   | 'dialogue_completion'
   | 'listen_and_type'
+  | 'dialogue_with_blanks'
 
 export type Gender = 'male' | 'female'
 
@@ -88,6 +89,18 @@ export interface ListenAndTypeItem {
   translationHint: string
 }
 
+export interface DialogueWithBlanksItem {
+  scenario: string
+  image?: string
+  dialogue: {
+    speaker: string
+    line: GenderedText
+    isBlank: boolean
+    options?: GenderedText[]
+    correctAnswer?: number
+  }[]
+}
+
 export interface InteractiveExercise {
   id: string
   type: InteractiveExerciseType
@@ -100,6 +113,7 @@ export interface InteractiveExercise {
     | SpeakingPracticeItem
     | DialogueCompletionItem
     | ListenAndTypeItem
+    | DialogueWithBlanksItem
 }
 
 export interface InteractiveLessonData {

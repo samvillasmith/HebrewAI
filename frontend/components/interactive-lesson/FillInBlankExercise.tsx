@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { FillInBlankItem } from '@/types/interactive-lesson'
@@ -22,6 +22,13 @@ export default function FillInBlankExercise({
   const [showFeedback, setShowFeedback] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
 
+  // Reset state when exercise changes
+  useEffect(() => {
+    setSelectedAnswer(null)
+    setShowFeedback(false)
+    setIsCorrect(false)
+  }, [item])
+
   // Resolve gendered text
   const sentence = resolveGenderedText(item.sentence, gender)
   const translation = resolveGenderedText(item.translation, gender)
@@ -35,7 +42,13 @@ export default function FillInBlankExercise({
     if (showFeedback) return
 
     setSelectedAnswer(answer)
-    const correct = answer === correctAnswer
+    // Normalize both strings for comparison (handles Hebrew text Unicode variations)
+    const normalizedAnswer = answer.normalize('NFC').trim()
+    const normalizedCorrect = correctAnswer.normalize('NFC').trim()
+    const correct = normalizedAnswer === normalizedCorrect
+
+    console.log('Selected:', normalizedAnswer, 'Correct:', normalizedCorrect, 'Match:', correct)
+
     setIsCorrect(correct)
     setShowFeedback(true)
 
@@ -140,6 +153,31 @@ export default function FillInBlankExercise({
             </p>
           )}
         </div>
+      )}
+
+      {/* Continue button for correct answers (backup if auto-advance fails) */}
+      {showFeedback && isCorrect && (
+        <Button
+          size="lg"
+          onClick={() => onCorrect()}
+          className="mt-4"
+        >
+          Continue
+        </Button>
+      )}
+
+      {/* Reset button for incorrect answers */}
+      {showFeedback && !isCorrect && (
+        <Button
+          variant="outline"
+          onClick={() => {
+            setSelectedAnswer(null)
+            setShowFeedback(false)
+            setIsCorrect(false)
+          }}
+        >
+          Try Again
+        </Button>
       )}
     </div>
   )
