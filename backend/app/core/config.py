@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     # Clerk
     CLERK_SECRET_KEY: str
 
+    # Google Cloud (for TTS)
+    GOOGLE_CLOUD_PROJECT: Optional[str] = None
+    GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = None
+
     # API Settings
     API_PORT: int = 8000
     API_HOST: str = "0.0.0.0"

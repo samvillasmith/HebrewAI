@@ -135,8 +135,61 @@ async def get_all_courses():
 
 @app.post("/api/tts/")
 async def text_to_speech(request: dict):
-    """Text-to-speech endpoint (stub for now)"""
-    return {"message": "TTS not implemented in simple server"}
+    """
+    Text-to-speech endpoint using Google Cloud TTS for accurate Hebrew pronunciation
+    """
+    try:
+        from google.cloud import texttospeech
+        from fastapi.responses import StreamingResponse
+        import io
+
+        text = request.get("text", "")
+        voice = request.get("voice", "he-IL-Wavenet-A")
+
+        # Initialize Google Cloud TTS client
+        tts_client = texttospeech.TextToSpeechClient()
+
+        # Prepare the text input
+        synthesis_input = texttospeech.SynthesisInput(text=text)
+
+        # Configure voice parameters for Hebrew
+        language_code = "-".join(voice.split("-")[:2]) if "-" in voice else "he-IL"
+        voice_params = texttospeech.VoiceSelectionParams(
+            language_code=language_code,
+            name=voice,
+        )
+
+        # Configure audio output with high quality
+        audio_config = texttospeech.AudioConfig(
+            audio_encoding=texttospeech.AudioEncoding.MP3,
+            speaking_rate=0.9,  # Slightly slower for language learning
+            pitch=0.0,
+        )
+
+        # Perform the text-to-speech request
+        response = tts_client.synthesize_speech(
+            input=synthesis_input,
+            voice=voice_params,
+            audio_config=audio_config
+        )
+
+        # Convert response to audio bytes
+        audio_bytes = io.BytesIO(response.audio_content)
+        audio_bytes.seek(0)
+
+        return StreamingResponse(
+            audio_bytes,
+            media_type="audio/mpeg",
+            headers={
+                "Content-Disposition": "inline; filename=speech.mp3"
+            }
+        )
+    except Exception as e:
+        print(f"Error in TTS: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Text-to-speech generation failed: {str(e)}"
+        )
 
 if __name__ == "__main__":
     import uvicorn

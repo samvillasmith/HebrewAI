@@ -3,40 +3,62 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
 import io
+import os
 
-from openai import AsyncOpenAI
+from google.cloud import texttospeech
 from app.core.config import settings
 
 router = APIRouter()
 
-# Initialize OpenAI client
-openai_client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+# Initialize Google Cloud TTS client
+# Set credentials from environment if specified
+if settings.GOOGLE_APPLICATION_CREDENTIALS:
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = settings.GOOGLE_APPLICATION_CREDENTIALS
+
+tts_client = texttospeech.TextToSpeechClient()
 
 
 class TTSRequest(BaseModel):
     text: str
     language: str = "he"  # Hebrew
-    voice: str = "nova"  # OpenAI voice options: alloy, echo, fable, onyx, nova, shimmer
+    voice: str = "he-IL-Wavenet-A"  # Google Cloud Hebrew voices: he-IL-Wavenet-A (female), he-IL-Wavenet-B (male), he-IL-Wavenet-C (female), he-IL-Wavenet-D (male)
 
 
 @router.post("/")
 async def text_to_speech(request: TTSRequest):
     """
-    Convert Hebrew text to speech using OpenAI TTS
-    Returns audio file stream
+    Convert Hebrew text to speech using Google Cloud TTS
+    Returns audio file stream with accurate Hebrew pronunciation
     """
     try:
-        # Use OpenAI TTS API with HD model for better quality
-        response = await openai_client.audio.speech.create(
-            model="tts-1-hd",  # Higher quality model
-            voice=request.voice,
-            input=request.text,
+        # Prepare the text input
+        synthesis_input = texttospeech.SynthesisInput(text=request.text)
+
+        # Configure voice parameters for Hebrew
+        # Extract language code from voice name (e.g., "he-IL-Wavenet-A" -> "he-IL")
+        language_code = "-".join(request.voice.split("-")[:2]) if "-" in request.voice else "he-IL"
+
+        voice = texttospeech.VoiceSelectionParams(
+            language_code=language_code,
+            name=request.voice,
+        )
+
+        # Configure audio output with high quality
+        audio_config = texttospeech.AudioConfig(
+            audio_encoding=texttospeech.AudioEncoding.MP3,
+            speaking_rate=0.9,  # Slightly slower for language learning
+            pitch=0.0,
+        )
+
+        # Perform the text-to-speech request
+        response = tts_client.synthesize_speech(
+            input=synthesis_input,
+            voice=voice,
+            audio_config=audio_config
         )
 
         # Convert response to audio bytes
-        audio_bytes = io.BytesIO()
-        for chunk in response.iter_bytes():
-            audio_bytes.write(chunk)
+        audio_bytes = io.BytesIO(response.audio_content)
         audio_bytes.seek(0)
 
         return StreamingResponse(
@@ -91,14 +113,16 @@ async def speech_to_text(request: STTRequest):
 
 @router.get("/voices")
 async def get_available_voices():
-    """Get list of available TTS voices"""
+    """Get list of available Hebrew TTS voices from Google Cloud"""
     return {
         "voices": [
-            {"id": "alloy", "name": "Alloy", "description": "Neutral voice"},
-            {"id": "echo", "name": "Echo", "description": "Male voice"},
-            {"id": "fable", "name": "Fable", "description": "British accent"},
-            {"id": "onyx", "name": "Onyx", "description": "Deep male voice"},
-            {"id": "nova", "name": "Nova", "description": "Female voice (recommended for Hebrew)"},
-            {"id": "shimmer", "name": "Shimmer", "description": "Soft female voice"},
+            {"id": "he-IL-Wavenet-A", "name": "Wavenet-A", "description": "Female voice (recommended)", "gender": "female"},
+            {"id": "he-IL-Wavenet-B", "name": "Wavenet-B", "description": "Male voice", "gender": "male"},
+            {"id": "he-IL-Wavenet-C", "name": "Wavenet-C", "description": "Female voice", "gender": "female"},
+            {"id": "he-IL-Wavenet-D", "name": "Wavenet-D", "description": "Male voice", "gender": "male"},
+            {"id": "he-IL-Standard-A", "name": "Standard-A", "description": "Female voice (standard quality)", "gender": "female"},
+            {"id": "he-IL-Standard-B", "name": "Standard-B", "description": "Male voice (standard quality)", "gender": "male"},
+            {"id": "he-IL-Standard-C", "name": "Standard-C", "description": "Female voice (standard quality)", "gender": "female"},
+            {"id": "he-IL-Standard-D", "name": "Standard-D", "description": "Male voice (standard quality)", "gender": "male"},
         ]
     }
