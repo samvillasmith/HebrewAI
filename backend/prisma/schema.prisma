@@ -24,6 +24,7 @@ model User {
   progress       UserProgress?
   conversations  Conversation[]
   lessonProgress LessonProgress[]
+  reviewItems    ReviewItem[]
 }
 
 model UserProgress {
@@ -31,27 +32,55 @@ model UserProgress {
   userId          String   @unique
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   currentLevel    String   @default("A1") // A1, A2, B1
+  currentCourseId String? // Currently active course
   xpPoints        Int      @default(0)
   streakDays      Int      @default(0)
   lastActiveDate  DateTime @default(now())
   lessonsComplete Int      @default(0)
+  totalStudyMinutes Int    @default(0) // Track total study time
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
 
-model Lesson {
-  id          String           @id @default(cuid())
+model Course {
+  id          String   @id @default(cuid())
   title       String
   description String
   level       String // A1, A2, B1
-  order       Int
-  content     Json // Structured lesson content
+  order       Int // Order within level (1-8 courses per level)
+  imageUrl    String?
+  estimatedHours Int @default(5) // Estimated hours to complete
+  isLocked    Boolean  @default(false) // Requires previous course completion
+  prerequisites String[] // Array of course IDs that must be completed first
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lessons     Lesson[]
+
+  @@index([level, order])
+}
+
+model Lesson {
+  id          String           @id @default(cuid())
+  courseId    String
+  course      Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  level       String // A1, A2, B1
+  order       Int // Order within the course (5-15 lessons per course)
+  duration    Int @default(15) // Minutes (10-15 per lesson)
+  content     Json // Structured lesson content (intro, examples, notes)
   objectives  String[] // Learning objectives
-  vocabulary  Json // Vocabulary items with translations
-  grammar     Json? // Grammar points covered
+  vocabulary  Json // Vocabulary items with translations (5-7 items per lesson)
+  grammar     Json? // Grammar points covered (short, contextual)
+  exercises   Json // Array of exercises (flashcards, fill-blank, matching, listening, conversation, etc.)
+  isLocked    Boolean  @default(false) // Requires previous lesson completion
+  difficulty  String   @default("beginner") // beginner, intermediate, advanced
+  tags        String[] // Topic tags (greetings, family, food, etc.)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
   progress    LessonProgress[]
+
+  @@index([courseId, order])
 }
 
 model LessonProgress {
@@ -103,6 +132,37 @@ model VocabularyItem {
   audioUrl     String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  reviewItems  ReviewItem[]
 
   @@index([level, category])
+}
+
+model ReviewItem {
+  id              String         @id @default(cuid())
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vocabularyId    String
+  vocabulary      VocabularyItem @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+  interval        Int            @default(1) // Days until next review
+  easeFactor      Float          @default(2.5) // Spaced repetition ease
+  repetitions     Int            @default(0)
+  nextReview      DateTime       @default(now())
+  lastReviewed    DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([userId, vocabularyId])
+  @@index([userId, nextReview])
+}
+
+model ReviewSession {
+  id              String   @id @default(cuid())
+  userId          String
+  duration        Int // Minutes spent in review (3-5 minutes)
+  itemsReviewed   Int // Number of items reviewed
+  reviewType      String // flashcards, listening, speaking, writing
+  score           Int? // Optional score
+  createdAt       DateTime @default(now())
+
+  @@index([userId, createdAt])
 }

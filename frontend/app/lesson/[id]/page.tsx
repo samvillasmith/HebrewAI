@@ -7,6 +7,13 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import FlashcardExercise from '@/components/exercises/FlashcardExercise'
+import FillBlankExercise from '@/components/exercises/FillBlankExercise'
+import MatchingExercise from '@/components/exercises/MatchingExercise'
+import MultipleChoiceExercise from '@/components/exercises/MultipleChoiceExercise'
+import ListeningExercise from '@/components/exercises/ListeningExercise'
+import ConversationExercise from '@/components/exercises/ConversationExercise'
+import ReviewPrompt from '@/components/ReviewPrompt'
 
 interface LessonData {
   id: string
@@ -22,9 +29,11 @@ interface LessonData {
 export default function LessonPage({ params }: { params: { id: string } }) {
   const [lesson, setLesson] = useState<LessonData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [currentExercise, setCurrentExercise] = useState(0)
-  const [answers, setAnswers] = useState<Record<number, string>>({})
-  const [showResults, setShowResults] = useState(false)
+  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0)
+  const [completedExercises, setCompletedExercises] = useState<number[]>([])
+  const [exerciseScores, setExerciseScores] = useState<Record<number, number>>({})
+  const [showReviewPrompt, setShowReviewPrompt] = useState(false)
+  const [showFinalCompletion, setShowFinalCompletion] = useState(false)
 
   useEffect(() => {
     fetchLesson()
@@ -74,6 +83,18 @@ export default function LessonPage({ params }: { params: { id: string } }) {
         window.speechSynthesis.speak(utterance)
       }
     }
+  }
+
+  const handleReviewSelect = (type: 'flashcards' | 'listening' | 'writing' | 'speaking') => {
+    // TODO: Implement review sessions based on type
+    // For now, just show completion
+    setShowReviewPrompt(false)
+    setShowFinalCompletion(true)
+  }
+
+  const handleSkipReview = () => {
+    setShowReviewPrompt(false)
+    setShowFinalCompletion(true)
   }
 
   if (isLoading) {
@@ -276,37 +297,136 @@ export default function LessonPage({ params }: { params: { id: string } }) {
 
             {/* Practice Tab */}
             <TabsContent value="practice" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Practice Exercises</CardTitle>
-                  <CardDescription>
-                    Test your knowledge of this lesson
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    <div className="text-center py-12 bg-gray-50 rounded-lg">
-                      <div className="text-6xl mb-4">🎯</div>
-                      <h3 className="text-xl font-semibold mb-2">Interactive Exercises Coming Soon!</h3>
-                      <p className="text-gray-600 mb-6">
-                        We're building interactive quizzes, flashcards, and writing exercises.
-                      </p>
-                      <div className="flex gap-3 justify-center">
-                        <Link href={`/lesson/${params.id}/chat`}>
-                          <Button>
-                            💬 Practice with AI Tutor
-                          </Button>
-                        </Link>
-                        <Link href="/dashboard">
-                          <Button variant="outline">
-                            Continue Learning
-                          </Button>
-                        </Link>
+              {lesson.exercises && Array.isArray(lesson.exercises) && lesson.exercises.length > 0 ? (
+                <Card>
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <CardTitle>Practice Exercises</CardTitle>
+                        <CardDescription>
+                          Complete {lesson.exercises.length} interactive exercises
+                        </CardDescription>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {completedExercises.length} / {lesson.exercises.length} completed
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardHeader>
+                  <CardContent>
+                    {currentExerciseIndex < lesson.exercises.length ? (
+                      <div className="space-y-6">
+                        {(() => {
+                          const exercise = lesson.exercises[currentExerciseIndex]
+                          const handleComplete = (score: number) => {
+                            setCompletedExercises([...completedExercises, currentExerciseIndex])
+                            setExerciseScores({ ...exerciseScores, [currentExerciseIndex]: score })
+                            if (currentExerciseIndex < lesson.exercises.length - 1) {
+                              setTimeout(() => setCurrentExerciseIndex(currentExerciseIndex + 1), 1500)
+                            } else {
+                              // All exercises completed - show review prompt
+                              setTimeout(() => setShowReviewPrompt(true), 1500)
+                            }
+                          }
+
+                          switch (exercise.type) {
+                            case 'flashcard':
+                              return (
+                                <FlashcardExercise
+                                  title={exercise.title}
+                                  items={exercise.items}
+                                  onComplete={handleComplete}
+                                />
+                              )
+                            case 'fill_in_blank':
+                              return (
+                                <FillBlankExercise
+                                  title={exercise.title}
+                                  questions={exercise.questions}
+                                  onComplete={handleComplete}
+                                />
+                              )
+                            case 'matching':
+                              return (
+                                <MatchingExercise
+                                  title={exercise.title}
+                                  pairs={exercise.pairs}
+                                  onComplete={handleComplete}
+                                />
+                              )
+                            case 'multiple_choice':
+                              return (
+                                <MultipleChoiceExercise
+                                  title={exercise.title}
+                                  questions={exercise.questions}
+                                  onComplete={handleComplete}
+                                />
+                              )
+                            case 'listening':
+                              return (
+                                <ListeningExercise
+                                  title={exercise.title}
+                                  items={exercise.items}
+                                  onComplete={handleComplete}
+                                />
+                              )
+                            case 'conversation':
+                              return (
+                                <ConversationExercise
+                                  title={exercise.title}
+                                  scenario={exercise.scenario}
+                                  steps={exercise.steps}
+                                  onComplete={handleComplete}
+                                />
+                              )
+                            default:
+                              return (
+                                <div className="text-center py-8">
+                                  <p className="text-muted-foreground">Unknown exercise type: {exercise.type}</p>
+                                </div>
+                              )
+                          }
+                        })()}
+                      </div>
+                    ) : showReviewPrompt ? (
+                      <ReviewPrompt
+                        onSelectReview={handleReviewSelect}
+                        onSkip={handleSkipReview}
+                      />
+                    ) : (
+                      <div className="text-center py-12">
+                        <div className="text-6xl mb-4">🎉</div>
+                        <h3 className="text-2xl font-semibold mb-2">Lesson Complete!</h3>
+                        <p className="text-muted-foreground mb-6">
+                          Great work! You've finished all exercises.
+                        </p>
+                        <div className="flex gap-3 justify-center">
+                          <Link href={`/lesson/${params.id}/chat`}>
+                            <Button>💬 Practice with AI Tutor</Button>
+                          </Link>
+                          <Link href="/dashboard">
+                            <Button variant="outline">Back to Dashboard</Button>
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardContent className="py-12">
+                    <div className="text-center">
+                      <div className="text-6xl mb-4">💬</div>
+                      <h3 className="text-xl font-semibold mb-2">Practice with AI Tutor</h3>
+                      <p className="text-gray-600 mb-6">
+                        No exercises yet for this lesson. Practice with our AI tutor!
+                      </p>
+                      <Link href={`/lesson/${params.id}/chat`}>
+                        <Button>Start Conversation</Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
           </Tabs>
 
