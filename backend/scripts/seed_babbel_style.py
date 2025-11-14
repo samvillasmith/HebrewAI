@@ -1,41 +1,61 @@
 #!/usr/bin/env python3
 """
-Seed script to populate database with Babbel-style courses and lessons
-Run with: python scripts/seed_babbel_style.py
+Comprehensive Babbel-style seeding using raw SQL to bypass Prisma cache issues
 """
-
 import asyncio
-import sys
-from pathlib import Path
+import asyncpg
+import json
+import os
+from dotenv import load_dotenv
 
-# Add parent directory to path
-sys.path.append(str(Path(__file__).parent.parent))
+load_dotenv()
 
-from app.core.database import prisma
-from prisma import Json
+async def seed_babbel_system():
+    # Connect to database
+    db_url = os.getenv("DATABASE_URL")
+    conn = await asyncpg.connect(db_url)
 
+    print("Connected to database")
 
-async def seed_babbel_courses():
-    """Seed courses and lessons following Babbel's structure"""
+    # Clear existing data (in correct order to avoid foreign key errors)
+    print("Clearing existing data...")
+    await conn.execute('DELETE FROM "ReviewSession"')
+    await conn.execute('DELETE FROM "ReviewItem"')
+    await conn.execute('DELETE FROM "VocabularyItem"')
+    await conn.execute('DELETE FROM "Message"')
+    await conn.execute('DELETE FROM "Conversation"')
+    await conn.execute('DELETE FROM "LessonProgress"')
+    await conn.execute('DELETE FROM "Lesson"')
+    await conn.execute('DELETE FROM "Course"')
+    print("Cleared existing data")
 
-    await prisma.connect()
-    print("✅ Connected to database")
+    print("Creating A1 Level courses...")
 
-    # Clear existing data
-    print("🗑️  Clearing existing courses and lessons...")
-    await prisma.lesson.delete_many()
-    await prisma.course.delete_many()
-    print("✅ Cleared existing data")
+    # ========== COURSE 1: HEBREW FOUNDATIONS ==========
+    course1_id = await conn.fetchval("""
+        INSERT INTO "Course" (id, title, description, level, "order", "estimatedHours", "isLocked", prerequisites, "createdAt", "updatedAt")
+        VALUES (
+            gen_random_uuid()::text,
+            'Hebrew Foundations',
+            'Master the alphabet, greetings, and essential phrases',
+            'A1',
+            1,
+            6,
+            false,
+            '{}',
+            NOW(),
+            NOW()
+        )
+        RETURNING id
+    """)
+    print(f"Created course: Hebrew Foundations ({course1_id})")
 
-    # A1 Level Courses
-    a1_courses = [
+    # LESSON 1.1: Hebrew Alphabet - Part 1
+    lesson1_exercises = [
         {
-            "title": "Newcomer Course 1",
-            "description": "Build your foundation with essential greetings, alphabet, and basic phrases",
-            "level": "A1",
-            "order": 1,
-            "estimatedHours": 5,
-            "lessons": [
+            "type": "flashcard",
+            "title": "Practice the Letters",
+            "items": [
                 {
                     "title": "The Hebrew Alphabet - Part 1",
                     "description": "Master the first 11 letters of the Hebrew alphabet",
