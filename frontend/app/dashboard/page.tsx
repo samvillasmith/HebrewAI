@@ -23,6 +23,7 @@ export default function DashboardPage() {
     streakDays: 0,
     xpPoints: 0,
   })
+  const [completedLessons, setCompletedLessons] = React.useState<Set<string>>(new Set())
   const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
@@ -44,6 +45,16 @@ export default function DashboardPage() {
         // Fetch vocabulary stats
         const vocabRes = await fetch(`${apiUrl}/api/vocabulary/stats?user_id=${userId}`)
         const vocabData = await vocabRes.json()
+
+        // Get completed lesson IDs
+        if (progressData.lesson_progress) {
+          const completed = new Set(
+            progressData.lesson_progress
+              .filter((lp: any) => lp.is_completed)
+              .map((lp: any) => lp.lesson_id)
+          )
+          setCompletedLessons(completed)
+        }
 
         setUserProgress({
           currentLevel: progressData.current_level || 'A1',
@@ -237,31 +248,40 @@ export default function DashboardPage() {
                     {/* Expanded Lessons */}
                     {expandedCourse === course.id && (
                       <div className="mt-2 ml-4 space-y-2 animate-in slide-in-from-top">
-                        {course.lessons.map((lesson, idx) => (
-                          <Link key={lesson.id} href={`/interactive-lesson/${lesson.id}`}>
-                            <div className="p-3 border rounded-lg hover:bg-indigo-50 transition-colors bg-white">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded bg-indigo-50 flex items-center justify-center">
-                                    <span className="text-xs font-bold text-indigo-600">
-                                      {lesson.lessonNumber}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <h5 className="font-medium text-sm">{lesson.title}</h5>
-                                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
-                                      <Clock className="w-3 h-3" />
-                                      {lesson.duration}
-                                      <span>•</span>
-                                      <span>{lesson.vocabularyCount} words</span>
+                        {course.lessons.map((lesson, idx) => {
+                          const isCompleted = completedLessons.has(lesson.id)
+                          return (
+                            <Link key={lesson.id} href={`/interactive-lesson/${lesson.id}`}>
+                              <div className={`p-3 border rounded-lg hover:bg-indigo-50 transition-colors ${isCompleted ? 'bg-green-50 border-green-300' : 'bg-white'}`}>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <div className={`w-8 h-8 rounded flex items-center justify-center ${isCompleted ? 'bg-green-500 text-white' : 'bg-indigo-50'}`}>
+                                      {isCompleted ? (
+                                        <span className="text-sm">✓</span>
+                                      ) : (
+                                        <span className="text-xs font-bold text-indigo-600">
+                                          {lesson.lessonNumber}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div>
+                                      <h5 className="font-medium text-sm">{lesson.title}</h5>
+                                      <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                                        <Clock className="w-3 h-3" />
+                                        {lesson.duration}
+                                        <span>•</span>
+                                        <span>{lesson.vocabularyCount} words</span>
+                                      </div>
                                     </div>
                                   </div>
+                                  <Button size="sm" variant="ghost">
+                                    {isCompleted ? 'Review' : 'Start'}
+                                  </Button>
                                 </div>
-                                <Button size="sm" variant="ghost">Start</Button>
                               </div>
-                            </div>
-                          </Link>
-                        ))}
+                            </Link>
+                          )
+                        })}
                       </div>
                     )}
                   </div>

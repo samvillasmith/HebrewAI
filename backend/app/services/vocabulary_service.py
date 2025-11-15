@@ -115,15 +115,18 @@ class VocabularyService:
             )
 
             if not existing:
-                # Create new review item with spaced repetition defaults
+                # Create new review item - available for immediate review
+                from datetime import timezone, timedelta
+                # Set review to 1 minute ago so it's immediately available
+                immediate_review = datetime.now(timezone.utc) - timedelta(minutes=1)
                 await prisma.reviewitem.create(
                     data={
                         "userId": user_id,
                         "vocabularyId": vocab_id,
-                        "interval": 1,  # Review tomorrow
+                        "interval": 1,  # Next review in 1 day after first review
                         "easeFactor": 2.5,  # Default ease
                         "repetitions": 0,
-                        "nextReview": datetime.utcnow(),  # Available for review immediately
+                        "nextReview": immediate_review,  # Available NOW
                     }
                 )
                 new_words_count += 1
