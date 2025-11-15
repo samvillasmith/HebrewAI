@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { speak } from '../../utils/tts';
 import { Ionicons } from '@expo/vector-icons';
 import { useGender } from '../../contexts/GenderContext';
@@ -66,7 +66,7 @@ export default function ListenAndSelectExercise({ item, onCorrect }: ListenAndSe
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <Text style={styles.title}>Listen and Select</Text>
       <Text style={styles.instruction}>What did you hear? Tap to listen again.</Text>
 
@@ -106,12 +106,13 @@ export default function ListenAndSelectExercise({ item, onCorrect }: ListenAndSe
           )}
         </View>
       )}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
+  container: { flex: 1 },
+  scrollContent: { padding: 20, paddingBottom: 40 },
   title: { fontSize: 24, fontWeight: 'bold', color: '#1f2937', marginBottom: 8 },
   instruction: { fontSize: 16, color: '#6b7280', marginBottom: 32 },
   audioButton: { alignSelf: 'center', backgroundColor: '#ede9fe', padding: 24, borderRadius: 60, marginBottom: 40 },

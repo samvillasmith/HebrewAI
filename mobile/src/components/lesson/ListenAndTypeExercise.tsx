@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, ScrollView, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { speak } from '../../utils/tts';
 import { Ionicons } from '@expo/vector-icons';
 import { useGender } from '../../contexts/GenderContext';
+import { compareHebrewText } from '../../utils/hebrewUtils';
 
 interface ListenAndTypeExerciseProps {
   item: {
@@ -31,7 +32,8 @@ export default function ListenAndTypeExercise({ item, onCorrect }: ListenAndType
   };
 
   const handleCheck = () => {
-    const correct = answer.trim() === item.text.trim();
+    // Compare without niqqud since mobile keyboards don't have it
+    const correct = compareHebrewText(answer, item.text);
     setIsCorrect(correct);
     setShowFeedback(true);
     if (correct) {
@@ -40,55 +42,65 @@ export default function ListenAndTypeExercise({ item, onCorrect }: ListenAndType
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>🎧 Listen and Type</Text>
-      <Text style={styles.instruction}>Listen carefully and type what you hear</Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <Text style={styles.title}>🎧 Listen and Type</Text>
+          <Text style={styles.instruction}>Listen carefully and type what you hear</Text>
 
-      <TouchableOpacity style={styles.audioButton} onPress={playAudio}>
-        <Ionicons name="volume-high" size={48} color="#6366f1" />
-        <Text style={styles.replayText}>Tap to replay</Text>
-      </TouchableOpacity>
+          <TouchableOpacity style={styles.audioButton} onPress={playAudio}>
+            <Ionicons name="volume-high" size={48} color="#6366f1" />
+            <Text style={styles.replayText}>Tap to replay</Text>
+          </TouchableOpacity>
 
-      <Text style={styles.hint}>Hint: {item.translationHint}</Text>
+          <Text style={styles.hint}>Hint: {item.translationHint}</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Type here..."
-        value={answer}
-        onChangeText={setAnswer}
-        editable={!showFeedback}
-        multiline
-        autoCorrect={false}
-      />
+          <TextInput
+            style={styles.input}
+            placeholder="Type here..."
+            value={answer}
+            onChangeText={setAnswer}
+            editable={!showFeedback}
+            multiline
+            autoCorrect={false}
+            returnKeyType="done"
+            blurOnSubmit={true}
+          />
 
-      {!showFeedback && (
-        <TouchableOpacity
-          style={[styles.checkButton, !answer && styles.checkButtonDisabled]}
-          onPress={handleCheck}
-          disabled={!answer}
-        >
-          <Text style={styles.checkButtonText}>Check Answer</Text>
-        </TouchableOpacity>
-      )}
-
-      {showFeedback && (
-        <View style={[styles.feedback, isCorrect ? styles.correctFeedback : styles.incorrectFeedback]}>
-          <Text style={styles.feedbackText}>
-            {isCorrect ? '✓ Perfect!' : `✗ Correct answer: ${item.text}`}
-          </Text>
-          {!isCorrect && (
-            <TouchableOpacity style={styles.tryAgainButton} onPress={() => { setShowFeedback(false); setAnswer(''); }}>
-              <Text style={styles.tryAgainText}>Try Again</Text>
+          {!showFeedback && (
+            <TouchableOpacity
+              style={[styles.checkButton, !answer && styles.checkButtonDisabled]}
+              onPress={handleCheck}
+              disabled={!answer}
+            >
+              <Text style={styles.checkButtonText}>Check Answer</Text>
             </TouchableOpacity>
           )}
-        </View>
-      )}
-    </View>
+
+          {showFeedback && (
+            <View style={[styles.feedback, isCorrect ? styles.correctFeedback : styles.incorrectFeedback]}>
+              <Text style={styles.feedbackText}>
+                {isCorrect ? '✓ Perfect!' : `✗ Correct answer: ${item.text}`}
+              </Text>
+              {!isCorrect && (
+                <TouchableOpacity style={styles.tryAgainButton} onPress={() => { setShowFeedback(false); setAnswer(''); }}>
+                  <Text style={styles.tryAgainText}>Try Again</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: 'center' },
+  container: { flex: 1 },
+  scrollContent: { flexGrow: 1, padding: 20, justifyContent: 'center' },
   title: { fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 8 },
   instruction: { fontSize: 16, color: '#6b7280', textAlign: 'center', marginBottom: 32 },
   audioButton: { alignItems: 'center', backgroundColor: '#ede9fe', padding: 24, borderRadius: 16, marginBottom: 8 },
