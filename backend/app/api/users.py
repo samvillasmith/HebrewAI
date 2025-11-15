@@ -174,7 +174,7 @@ async def get_user_progress(
                 "progress": True,
                 "lessonProgress": {
                     "include": {"lesson": True},
-                    "order": {"lastAttempt": "desc"},
+                    "orderBy": {"lastAttempt": "desc"},
                 },
             },
         )

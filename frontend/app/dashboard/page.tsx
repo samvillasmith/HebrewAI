@@ -210,7 +210,16 @@ export default function DashboardPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                {a1Curriculum.courses.slice(0, 5).map((course) => (
+                {a1Curriculum.courses.slice(0, 5).map((course) => {
+                  // Calculate course progress
+                  const completedInCourse = course.lessons.filter(lesson =>
+                    completedLessons.has(lesson.id)
+                  ).length
+                  const courseProgress = course.totalLessons > 0
+                    ? Math.round((completedInCourse / course.totalLessons) * 100)
+                    : 0
+
+                  return (
                   <div key={course.id}>
                     <div
                       onClick={() => setExpandedCourse(expandedCourse === course.id ? null : course.id)}
@@ -227,7 +236,7 @@ export default function DashboardPage() {
                             <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
                               <span className="flex items-center gap-1">
                                 <BookOpen className="w-3 h-3" />
-                                {course.totalLessons} lessons
+                                {completedInCourse}/{course.totalLessons} lessons
                               </span>
                               <span>{course.totalWords} words</span>
                             </div>
@@ -241,7 +250,7 @@ export default function DashboardPage() {
                       </div>
                       {/* Progress bar */}
                       <div className="mt-3">
-                        <Progress value={0} className="h-1.5" />
+                        <Progress value={courseProgress} className="h-1.5" />
                       </div>
                     </div>
 
@@ -285,7 +294,8 @@ export default function DashboardPage() {
                       </div>
                     )}
                   </div>
-                ))}
+                  )
+                })}
 
                 <Link href="/courses">
                   <Button variant="outline" className="w-full mt-4">
