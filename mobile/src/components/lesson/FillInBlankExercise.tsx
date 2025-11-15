@@ -28,10 +28,6 @@ export default function FillInBlankExercise({ item, onCorrect }: FillInBlankProp
     const correct = compareHebrewText(answer, item.correctAnswer);
     setIsCorrect(correct);
     setShowFeedback(true);
-
-    if (correct) {
-      setTimeout(() => onCorrect(), 1500);
-    }
   };
 
   const sentenceParts = sentence.split('___');
@@ -74,7 +70,14 @@ export default function FillInBlankExercise({ item, onCorrect }: FillInBlankProp
           <Text style={styles.feedbackText}>
             {isCorrect ? '✓ Correct!' : `✗ The correct answer is: ${item.correctAnswer}`}
           </Text>
-          {!isCorrect && (
+          {isCorrect ? (
+            <TouchableOpacity
+              style={styles.continueButton}
+              onPress={onCorrect}
+            >
+              <Text style={styles.continueButtonText}>Continue →</Text>
+            </TouchableOpacity>
+          ) : (
             <TouchableOpacity
               style={styles.tryAgainButton}
               onPress={() => {
@@ -108,4 +111,6 @@ const styles = StyleSheet.create({
   feedbackText: { fontSize: 16, fontWeight: '600', textAlign: 'center' },
   tryAgainButton: { marginTop: 12, backgroundColor: '#6366f1', padding: 12, borderRadius: 8 },
   tryAgainText: { color: '#ffffff', fontSize: 16, fontWeight: '600', textAlign: 'center' },
+  continueButton: { marginTop: 12, backgroundColor: '#10b981', padding: 12, borderRadius: 8 },
+  continueButtonText: { color: '#ffffff', fontSize: 16, fontWeight: '600', textAlign: 'center' },
 });
