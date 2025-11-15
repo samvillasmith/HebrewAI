@@ -14,6 +14,7 @@ interface LessonCompleteScreenProps {
   streakDays: number;
   vocabularyLearned: string[];
   onContinue: () => void;
+  onReview?: () => void;
 }
 
 export default function LessonCompleteScreen({
@@ -23,6 +24,7 @@ export default function LessonCompleteScreen({
   streakDays,
   vocabularyLearned,
   onContinue,
+  onReview,
 }: LessonCompleteScreenProps) {
   return (
     <ScrollView style={styles.container}>

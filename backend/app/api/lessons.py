@@ -163,6 +163,17 @@ async def update_lesson_progress(
         if not lesson:
             raise HTTPException(status_code=404, detail="Lesson not found")
 
+        # Check if lesson was already completed before this update
+        existing_lesson_progress = await db.lessonprogress.find_unique(
+            where={
+                "userId_lessonId": {
+                    "userId": user.id,
+                    "lessonId": lesson_id,
+                }
+            }
+        )
+        was_already_completed = existing_lesson_progress and existing_lesson_progress.isCompleted
+
         # Update or create lesson progress
         lesson_progress = await db.lessonprogress.upsert(
             where={
@@ -190,10 +201,10 @@ async def update_lesson_progress(
             },
         )
 
-        # Update user overall progress if lesson completed
+        # Update user overall progress if lesson completed FOR THE FIRST TIME
         lesson_completion_result = None
         course_completion_result = None
-        if request.is_completed:
+        if request.is_completed and not was_already_completed:
             user_progress = await db.userprogress.find_unique(
                 where={"userId": user.id}
             )

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useAuth, useUser } from '@clerk/clerk-expo';
+import { useFocusEffect } from '@react-navigation/native';
 import { fetchUserProgress, fetchVocabularyStats } from '../api/client';
 import { a1Curriculum } from '../data/curriculum';
 import { UserProgress, Course } from '../types';
@@ -27,16 +28,16 @@ export default function DashboardScreen({ navigation }: any) {
   });
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    if (userId) {
-      loadUserProgress();
+  const loadUserProgress = useCallback(async () => {
+    if (!userId) {
+      setLoading(false);
+      return;
     }
-  }, [userId]);
 
-  const loadUserProgress = async () => {
     try {
-      const progressData = await fetchUserProgress(userId!);
-      const vocabData = await fetchVocabularyStats(userId!);
+      setLoading(true);
+      const progressData = await fetchUserProgress(userId);
+      const vocabData = await fetchVocabularyStats(userId);
 
       if (progressData.lesson_progress) {
         const completed = new Set(
@@ -61,7 +62,14 @@ export default function DashboardScreen({ navigation }: any) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  // Refresh data whenever the screen comes into focus (e.g., after completing a lesson)
+  useFocusEffect(
+    useCallback(() => {
+      loadUserProgress();
+    }, [loadUserProgress])
+  );
 
   if (loading) {
     return (
