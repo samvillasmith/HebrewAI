@@ -103,6 +103,33 @@ export default function DashboardScreen({ navigation }: any) {
         </View>
       </View>
 
+      {/* Featured Lesson - At the Cafe */}
+      <View style={styles.featuredSection}>
+        <View style={styles.featuredHeader}>
+          <Text style={styles.featuredBadge}>✨ FEATURED LESSON</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.featuredCard}
+          onPress={() => navigation.navigate('Lesson', { lessonId: 'cafe-1' })}
+          activeOpacity={0.9}
+        >
+          <Text style={styles.featuredTitle}>☕ At the Café</Text>
+          <Text style={styles.featuredMeta}>Course 7: Food & Dining • ~18 minutes</Text>
+          <Text style={styles.featuredDescription}>
+            Order drinks, learn food vocabulary, and practice polite expressions
+          </Text>
+          <View style={styles.featuredFeatures}>
+            <Text style={styles.featuredFeature}>✨ 22 exercises</Text>
+            <Text style={styles.featuredFeature}>🎤 Speaking</Text>
+            <Text style={styles.featuredFeature}>🔊 TTS Audio</Text>
+            <Text style={styles.featuredFeature}>💬 Dialogue</Text>
+          </View>
+          <View style={styles.featuredButton}>
+            <Text style={styles.featuredButtonText}>Start Lesson →</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+
       {/* Courses */}
       <View style={styles.coursesSection}>
         <Text style={styles.sectionTitle}>A1 Level - Newcomer/Beginner</Text>
@@ -347,5 +374,69 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6366f1',
     fontWeight: '500',
+  },
+  featuredSection: {
+    padding: 16,
+    paddingTop: 0,
+  },
+  featuredHeader: {
+    marginBottom: 12,
+  },
+  featuredBadge: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6366f1',
+    letterSpacing: 0.5,
+  },
+  featuredCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#c7d2fe',
+    shadowColor: '#6366f1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  featuredTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 8,
+  },
+  featuredMeta: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 8,
+  },
+  featuredDescription: {
+    fontSize: 14,
+    color: '#4b5563',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  featuredFeatures: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 16,
+  },
+  featuredFeature: {
+    fontSize: 12,
+    color: '#6366f1',
+    fontWeight: '600',
+  },
+  featuredButton: {
+    backgroundColor: '#6366f1',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  featuredButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

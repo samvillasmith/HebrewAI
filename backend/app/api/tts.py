@@ -34,6 +34,12 @@ async def text_to_speech(request: TTSRequest):
     Convert Hebrew text to speech using Google Cloud TTS
     Returns audio file stream with accurate Hebrew pronunciation
     """
+    if not tts_client or not texttospeech:
+        raise HTTPException(
+            status_code=503,
+            detail="Google Cloud Text-to-Speech service is not available. Please check credentials and installation."
+        )
+
     try:
         # Prepare the text input
         synthesis_input = texttospeech.SynthesisInput(text=request.text)

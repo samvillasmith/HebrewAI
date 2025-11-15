@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { speak } from '../../utils/tts';
 import { Ionicons } from '@expo/vector-icons';
+import { useGender } from '../../contexts/GenderContext';
 
 interface SpeakingPracticeExerciseProps {
   item: {
@@ -13,13 +14,15 @@ interface SpeakingPracticeExerciseProps {
 }
 
 export default function SpeakingPracticeExercise({ item, onComplete }: SpeakingPracticeExerciseProps) {
+  const { gender } = useGender();
+
   useEffect(() => {
     playAudio();
   }, []);
 
   const playAudio = async () => {
     try {
-      await speak(item.hebrew, 'he-IL');
+      await speak(item.hebrew, 'he-IL', gender);
     } catch (error) {
       console.error('Error playing audio:', error);
     }

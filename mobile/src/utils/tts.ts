@@ -1,35 +1,73 @@
-import * as Speech from 'expo-speech';
-import { Platform } from 'react-native';
+import { Audio } from 'expo-av';
 
-export const speak = async (text: string, language: string = 'he-IL'): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    // Stop any ongoing speech
-    Speech.stop();
+type Gender = 'male' | 'female';
 
-    const options: Speech.SpeechOptions = {
-      language,
-      pitch: 1.0,
-      rate: 0.8, // Slower for language learning
-      onDone: () => resolve(),
-      onError: (error) => {
-        console.error('TTS Error:', error);
-        reject(error);
-      },
-    };
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.254.3:8000';
 
-    // For Hebrew, use iOS/Android native TTS
-    if (Platform.OS === 'ios') {
-      options.voice = 'com.apple.ttsbundle.Carmit-compact'; // Hebrew voice on iOS
+let currentSound: Audio.Sound | null = null;
+
+export const speak = async (
+  text: string,
+  language: string = 'he',
+  gender: Gender = 'male'
+): Promise<void> => {
+  try {
+    // Stop any currently playing audio
+    if (currentSound) {
+      await currentSound.stopAsync();
+      await currentSound.unloadAsync();
+      currentSound = null;
     }
 
-    Speech.speak(text, options);
-  });
+    // Call backend TTS API with gender parameter
+    const response = await fetch(`${API_URL}/api/tts/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text: text,
+        language: language,
+        gender: gender, // 'male' uses he-IL-Wavenet-B, 'female' uses he-IL-Wavenet-A
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`TTS API error: ${response.status}`);
+    }
+
+    // Get audio blob and create sound object
+    const audioBlob = await response.blob();
+    const reader = new FileReader();
+
+    reader.onloadend = async () => {
+      const base64Audio = (reader.result as string).split(',')[1];
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: `data:audio/mpeg;base64,${base64Audio}` },
+        { shouldPlay: true }
+      );
+      currentSound = sound;
+
+      // Clean up when done
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          sound.unloadAsync();
+          currentSound = null;
+        }
+      });
+    };
+
+    reader.readAsDataURL(audioBlob);
+  } catch (error) {
+    console.error('Error with text-to-speech:', error);
+    throw error;
+  }
 };
 
-export const stopSpeaking = () => {
-  Speech.stop();
-};
-
-export const isSpeaking = async (): Promise<boolean> => {
-  return Speech.isSpeakingAsync();
+export const stopSpeaking = async () => {
+  if (currentSound) {
+    await currentSound.stopAsync();
+    await currentSound.unloadAsync();
+    currentSound = null;
+  }
 };

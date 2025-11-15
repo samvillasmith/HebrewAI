@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { speak } from '../../utils/tts';
 import { Ionicons } from '@expo/vector-icons';
+import { useGender } from '../../contexts/GenderContext';
 
 interface BuildSentenceExerciseProps {
   item: {
@@ -14,6 +15,7 @@ interface BuildSentenceExerciseProps {
 }
 
 export default function BuildSentenceExercise({ item, onCorrect }: BuildSentenceExerciseProps) {
+  const { gender } = useGender();
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
   const [availableWords, setAvailableWords] = useState<string[]>([]);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -31,7 +33,7 @@ export default function BuildSentenceExercise({ item, onCorrect }: BuildSentence
 
   const playAudio = async () => {
     try {
-      await speak(text, 'he-IL');
+      await speak(text, 'he-IL', gender);
     } catch (error) {
       console.error('Error playing audio:', error);
     }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { speak } from '../../utils/tts';
 import { Ionicons } from '@expo/vector-icons';
+import { useGender } from '../../contexts/GenderContext';
 
 interface Option {
   image?: string;
@@ -20,6 +21,7 @@ interface ListenAndSelectProps {
 }
 
 export default function ListenAndSelectExercise({ item, onCorrect }: ListenAndSelectProps) {
+  const { gender } = useGender();
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
@@ -30,7 +32,7 @@ export default function ListenAndSelectExercise({ item, onCorrect }: ListenAndSe
 
   const playAudio = async () => {
     try {
-      await speak(item.text, 'he-IL');
+      await speak(item.text, 'he-IL', gender);
     } catch (error) {
       console.error('Error playing audio:', error);
     }

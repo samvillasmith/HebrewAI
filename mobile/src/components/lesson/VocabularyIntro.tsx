@@ -26,11 +26,7 @@ export default function VocabularyIntro({ item, onContinue, autoPlay = true }: V
 
   const playAudio = async () => {
     try {
-      // Use different voice based on gender
-      const voice = gender === 'female'
-        ? 'com.apple.ttsbundle.Carmit-compact'  // Female Hebrew voice
-        : 'com.apple.ttsbundle.Carmit-compact'; // Male Hebrew voice (adjust if different voice available)
-      await speak(hebrew, 'he-IL');
+      await speak(hebrew, 'he-IL', gender);
     } catch (error) {
       console.error('Error playing audio:', error);
     }
