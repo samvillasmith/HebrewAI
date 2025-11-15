@@ -18,6 +18,11 @@ export const fetchVocabularyStats = async (userId: string) => {
   return response.data;
 };
 
+export const fetchLesson = async (lessonId: string) => {
+  const response = await apiClient.get(`/api/lessons/${lessonId}`);
+  return response.data;
+};
+
 export const updateLessonProgress = async (
   lessonId: string,
   userId: string,

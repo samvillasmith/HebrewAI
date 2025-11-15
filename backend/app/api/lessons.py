@@ -23,7 +23,7 @@ class LessonResponse(BaseModel):
 
 class LessonDetailResponse(LessonResponse):
     content: Dict
-    vocabulary: Dict
+    vocabulary: List[Dict]  # Changed from Dict to List[Dict]
     grammar: Optional[Dict] = None
 
 

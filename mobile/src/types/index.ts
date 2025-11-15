@@ -1,22 +1,3 @@
-export interface Lesson {
-  id: string;
-  title: string;
-  description: string;
-  duration: string;
-  vocabularyCount: number;
-  lessonNumber: string;
-}
-
-export interface Course {
-  id: string;
-  courseNumber: number;
-  title: string;
-  description: string;
-  totalLessons: number;
-  totalWords: number;
-  lessons: Lesson[];
-}
-
 export interface UserProgress {
   currentLevel: string;
   lessonsCompleted: number;
@@ -27,8 +8,20 @@ export interface UserProgress {
   xpPoints: number;
 }
 
-export interface VocabularyItem {
-  hebrew: string;
-  english: string;
-  transliteration?: string;
+export interface Lesson {
+  id: string;
+  lessonNumber: number;
+  title: string;
+  duration: string;
+  vocabularyCount: number;
+}
+
+export interface Course {
+  id: string;
+  courseNumber: number;
+  title: string;
+  description: string;
+  totalLessons: number;
+  totalWords: number;
+  lessons: Lesson[];
 }
