@@ -5,17 +5,20 @@ from typing import Optional
 import io
 import os
 
-from google.cloud import texttospeech
 from app.core.config import settings
 
 router = APIRouter()
 
 # Initialize Google Cloud TTS client
-# Set credentials from environment if specified
-if settings.GOOGLE_APPLICATION_CREDENTIALS:
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = settings.GOOGLE_APPLICATION_CREDENTIALS
-
-tts_client = texttospeech.TextToSpeechClient()
+tts_client = None
+try:
+    from google.cloud import texttospeech
+    if settings.GOOGLE_APPLICATION_CREDENTIALS:
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = settings.GOOGLE_APPLICATION_CREDENTIALS
+    tts_client = texttospeech.TextToSpeechClient()
+except Exception as e:
+    print(f"Warning: Google Cloud TTS not available: {e}")
+    texttospeech = None
 
 
 class TTSRequest(BaseModel):

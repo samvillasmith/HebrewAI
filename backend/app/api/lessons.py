@@ -1,10 +1,12 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional, Dict
+from datetime import datetime
 
 from app.core.database import get_db
 from app.services.openai_service import openai_service
 from app.services.pinecone_service import pinecone_service
+from app.services.vocabulary_service import vocabulary_service
 
 router = APIRouter()
 
@@ -135,10 +137,26 @@ async def update_lesson_progress(
 ):
     """Update user's progress on a lesson"""
     try:
-        # Get user
+        # Get user or create if doesn't exist
         user = await db.user.find_unique(where={"clerkId": request.user_id})
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+            # Auto-create user if they don't exist
+            user = await db.user.create(
+                data={
+                    "clerkId": request.user_id,
+                    "email": f"{request.user_id}@temp.com",  # Temporary email
+                }
+            )
+            # Create initial progress
+            await db.userprogress.create(
+                data={
+                    "userId": user.id,
+                    "currentLevel": "A1",
+                    "xpPoints": 0,
+                    "streakDays": 0,
+                    "lessonsComplete": 0,
+                }
+            )
 
         # Check if lesson exists
         lesson = await db.lesson.find_unique(where={"id": lesson_id})
@@ -167,12 +185,14 @@ async def update_lesson_progress(
                     "isCompleted": request.is_completed,
                     "score": request.score,
                     "attempts": {"increment": 1},
-                    "lastAttempt": {"set": None},  # Will use default now()
+                    "lastAttempt": datetime.utcnow(),
                 },
             },
         )
 
         # Update user overall progress if lesson completed
+        lesson_completion_result = None
+        course_completion_result = None
         if request.is_completed:
             user_progress = await db.userprogress.find_unique(
                 where={"userId": user.id}
@@ -183,21 +203,97 @@ async def update_lesson_progress(
                     data={
                         "lessonsComplete": {"increment": 1},
                         "xpPoints": {"increment": 100},  # Award XP
-                        "lastActiveDate": {"set": None},  # Will use default now()
+                        "lastActiveDate": datetime.utcnow(),
                     },
                 )
+
+            # Add vocabulary from this lesson to user's review queue
+            lesson_completion_result = await vocabulary_service.process_lesson_completion(
+                user.id, lesson_id
+            )
+
+            # Check if this completes the course
+            course_id = lesson.courseId
+            course = await db.course.find_unique(
+                where={"id": course_id},
+                include={"lessons": True}
+            )
+
+            if course:
+                # Count completed lessons in this course
+                lesson_ids = [l.id for l in course.lessons]
+                completed_lessons = await db.lessonprogress.find_many(
+                    where={
+                        "userId": user.id,
+                        "lessonId": {"in": lesson_ids},
+                        "isCompleted": True
+                    }
+                )
+
+                total_lessons = len(course.lessons)
+                completed_count = len(completed_lessons)
+                progress_percentage = int((completed_count / total_lessons) * 100) if total_lessons > 0 else 0
+
+                is_course_completed = completed_count == total_lessons
+
+                # Get existing course progress
+                existing_course_progress = await db.courseprogress.find_unique(
+                    where={
+                        "userId_courseId": {
+                            "userId": user.id,
+                            "courseId": course_id,
+                        }
+                    }
+                )
+
+                was_already_completed = existing_course_progress and existing_course_progress.isCompleted
+
+                # Update course progress
+                await db.courseprogress.upsert(
+                    where={
+                        "userId_courseId": {
+                            "userId": user.id,
+                            "courseId": course_id,
+                        }
+                    },
+                    data={
+                        "create": {
+                            "userId": user.id,
+                            "courseId": course_id,
+                            "progress": progress_percentage,
+                            "isCompleted": is_course_completed,
+                            "completedAt": datetime.utcnow() if is_course_completed else None,
+                        },
+                        "update": {
+                            "progress": progress_percentage,
+                            "isCompleted": is_course_completed,
+                            "completedAt": datetime.utcnow() if is_course_completed and not was_already_completed else existing_course_progress.completedAt if existing_course_progress else None,
+                        },
+                    },
+                )
+
+                # If course just completed, add vocabulary to review
+                if is_course_completed and not was_already_completed:
+                    course_completion_result = await vocabulary_service.process_course_completion(
+                        user.id, course_id
+                    )
 
         return {
             "success": True,
             "progress": lesson_progress.progress,
             "is_completed": lesson_progress.isCompleted,
+            "lesson_completion": lesson_completion_result,
+            "course_completion": course_completion_result,
         }
 
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        error_detail = traceback.format_exc()
         print(f"Error updating lesson progress: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        print(error_detail)
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 
 class CreateLessonRequest(BaseModel):

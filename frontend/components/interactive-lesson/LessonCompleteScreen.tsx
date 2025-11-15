@@ -56,11 +56,12 @@ export default function LessonCompleteScreen({
 
             {/* Summary */}
             <div className="space-y-4">
-              <h3 className="font-semibold text-lg">You learned:</h3>
+              <h3 className="font-semibold text-lg">Lesson Summary:</h3>
               <ul className="space-y-2 text-gray-700">
-                <li>• {newWordsCount} new words and phrases</li>
-                <li>• How to order at a café</li>
-                <li>• Polite expressions in Hebrew</li>
+                <li className="flex items-center justify-center gap-2">
+                  <span className="text-2xl">📚</span>
+                  <span>{newWordsCount} new words added to your vocabulary review</span>
+                </li>
               </ul>
             </div>
 

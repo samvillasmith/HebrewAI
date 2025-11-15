@@ -24,6 +24,7 @@ model User {
   progress       UserProgress?
   conversations  Conversation[]
   lessonProgress LessonProgress[]
+  courseProgress CourseProgress[]
   reviewItems    ReviewItem[]
 }
 
@@ -55,6 +56,7 @@ model Course {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   lessons     Lesson[]
+  courseProgress CourseProgress[]
 
   @@index([level, order])
 }
@@ -98,6 +100,22 @@ model LessonProgress {
   updatedAt   DateTime @updatedAt
 
   @@unique([userId, lessonId])
+}
+
+model CourseProgress {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  isCompleted Boolean  @default(false)
+  progress    Int      @default(0) // 0-100 (calculated from completed lessons)
+  completedAt DateTime? // Timestamp when course was completed
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, courseId])
+  @@index([userId, isCompleted])
 }
 
 model Conversation {

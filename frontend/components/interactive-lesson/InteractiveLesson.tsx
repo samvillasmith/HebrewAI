@@ -8,6 +8,7 @@ import { InteractiveLessonData, InteractiveExercise } from '@/types/interactive-
 import Link from 'next/link'
 import { useGender } from '@/contexts/GenderContext'
 import { resolveGenderedText } from '@/lib/gender-utils'
+import { useAuth } from '@clerk/nextjs'
 
 // Screen components
 import LessonIntroScreen from './LessonIntroScreen'
@@ -41,11 +42,14 @@ export default function InteractiveLesson({
   showPreReview = true,
   reviewWordsCount = 5
 }: InteractiveLessonProps) {
+  const { userId } = useAuth()
   const { gender } = useGender()
   const [stage, setStage] = useState<LessonStage>(showPreReview ? 'pre-review' : 'intro')
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0)
   const [startTime, setStartTime] = useState<number>(Date.now())
   const [completedVocabulary, setCompletedVocabulary] = useState<string[]>([])
+  const [isSubmittingProgress, setIsSubmittingProgress] = useState(false)
+  const [vocabularyAddedCount, setVocabularyAddedCount] = useState(0)
 
   const currentExercise = lessonData.exercises[currentExerciseIndex]
   const progress = ((currentExerciseIndex + 1) / lessonData.exercises.length) * 100
@@ -65,6 +69,52 @@ export default function InteractiveLesson({
     setStartTime(Date.now())
   }
 
+  const updateLessonProgress = async () => {
+    if (!userId || isSubmittingProgress) return
+
+    setIsSubmittingProgress(true)
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const response = await fetch(`${apiUrl}/api/lessons/${lessonData.id}/progress`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          progress: 100,
+          is_completed: true,
+          score: 100, // Perfect score for completing the lesson
+        }),
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        console.log('Lesson progress updated:', result)
+
+        // Check if vocabulary was added from lesson
+        if (result.lesson_completion && result.lesson_completion.new_words_added > 0) {
+          console.log(`Added ${result.lesson_completion.new_words_added} new words to vocabulary!`)
+          setVocabularyAddedCount(result.lesson_completion.new_words_added)
+        }
+
+        // Check if course was completed
+        if (result.course_completion) {
+          console.log('Course completion:', result.course_completion)
+          if (result.course_completion.new_words_added > 0) {
+            console.log(`Course complete! Total words in course: ${result.course_completion.total_words}`)
+          }
+        }
+      } else {
+        console.error('Failed to update lesson progress:', await response.text())
+      }
+    } catch (error) {
+      console.error('Error updating lesson progress:', error)
+    } finally {
+      setIsSubmittingProgress(false)
+    }
+  }
+
   const handleExerciseComplete = () => {
     // Add vocabulary if it's a vocabulary intro
     if (currentExercise.type === 'vocabulary_intro') {
@@ -82,6 +132,8 @@ export default function InteractiveLesson({
     if (currentExerciseIndex < lessonData.exercises.length - 1) {
       setCurrentExerciseIndex(currentExerciseIndex + 1)
     } else {
+      // Lesson completed - update progress in backend
+      updateLessonProgress()
       setStage('complete')
     }
   }
@@ -140,7 +192,7 @@ export default function InteractiveLesson({
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <LessonCompleteScreen
           title={lessonData.title}
-          newWordsCount={lessonData.newVocabularyCount}
+          newWordsCount={vocabularyAddedCount || lessonData.newVocabularyCount}
           timeSpent={getTimeSpent()}
           streakDays={5} // TODO: Get from user data
           vocabularyLearned={completedVocabulary}

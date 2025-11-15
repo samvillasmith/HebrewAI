@@ -14,25 +14,61 @@ import { BookOpen, Clock, Award, ChevronRight, Sparkles } from 'lucide-react'
 export default function DashboardPage() {
   const { userId, isLoaded } = useAuth()
   const [expandedCourse, setExpandedCourse] = React.useState<string | null>(null)
+  const [userProgress, setUserProgress] = React.useState({
+    currentLevel: 'A1',
+    lessonsCompleted: 0,
+    totalLessons: a1Curriculum.totalLessons,
+    wordsLearned: 0,
+    totalWords: a1Curriculum.totalWords,
+    streakDays: 0,
+    xpPoints: 0,
+  })
+  const [loading, setLoading] = React.useState(true)
 
-  if (!isLoaded) {
+  React.useEffect(() => {
+    if (userId) {
+      fetchUserProgress()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId])
+
+  const fetchUserProgress = async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+      // Fetch user progress
+      const progressRes = await fetch(`${apiUrl}/api/users/${userId}`)
+      if (progressRes.ok) {
+        const progressData = await progressRes.json()
+
+        // Fetch vocabulary stats
+        const vocabRes = await fetch(`${apiUrl}/api/vocabulary/stats?user_id=${userId}`)
+        const vocabData = await vocabRes.json()
+
+        setUserProgress({
+          currentLevel: progressData.current_level || 'A1',
+          lessonsCompleted: progressData.lessons_complete || 0,
+          totalLessons: a1Curriculum.totalLessons,
+          wordsLearned: vocabData.total_words || 0,
+          totalWords: a1Curriculum.totalWords,
+          streakDays: progressData.streak_days || 0,
+          xpPoints: progressData.xp_points || 0,
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching user progress:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (!isLoaded || loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>
   }
 
   if (!userId) {
     redirect('/sign-in')
     return null
-  }
-
-  // User progress - will be fetched from API in production
-  const userProgress = {
-    currentLevel: 'A1',
-    lessonsCompleted: 0,
-    totalLessons: a1Curriculum.totalLessons,
-    wordsLearned: 0,
-    totalWords: a1Curriculum.totalWords,
-    streakDays: 1,
-    xpPoints: 0,
   }
 
   return (
@@ -48,6 +84,9 @@ export default function DashboardPage() {
           <div className="flex items-center gap-4">
             <Link href="/dashboard">
               <Button variant="ghost">Dashboard</Button>
+            </Link>
+            <Link href="/vocabulary">
+              <Button variant="ghost">Vocabulary</Button>
             </Link>
             <Link href="/pricing">
               <Button variant="ghost">Pricing</Button>

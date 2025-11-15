@@ -9,7 +9,11 @@ from app.services.redis_service import RedisService
 
 class OpenAIService:
     def __init__(self):
-        self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        try:
+            self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        except Exception as e:
+            print(f"Warning: Failed to initialize OpenAI client: {e}")
+            self.client = None
         self.pinecone = PineconeService()
         self.redis = RedisService()
         self.model = settings.OPENAI_MODEL
