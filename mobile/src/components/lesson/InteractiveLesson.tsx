@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { LessonData, Exercise } from '../../types/lesson';
-import { GenderProvider } from '../../contexts/GenderContext';
+import { GenderProvider, useGender } from '../../contexts/GenderContext';
+import { resolveGenderedText } from '../../utils/genderUtils';
 import GenderToggle from '../GenderToggle';
 import LessonIntroScreen from './LessonIntroScreen';
 import LessonCompleteScreen from './LessonCompleteScreen';
@@ -23,6 +24,7 @@ interface InteractiveLessonProps {
 }
 
 function InteractiveLessonContent({ lessonData, onComplete }: InteractiveLessonProps) {
+  const { gender } = useGender();
   const [stage, setStage] = useState<LessonStage>('intro');
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [startTime] = useState(Date.now());
@@ -36,7 +38,7 @@ function InteractiveLessonContent({ lessonData, onComplete }: InteractiveLessonP
   const handleExerciseComplete = () => {
     if (currentExercise.type === 'vocabulary_intro') {
       const vocabData = currentExercise.data;
-      const hebrew = typeof vocabData.hebrew === 'string' ? vocabData.hebrew : vocabData.hebrew.male;
+      const hebrew = resolveGenderedText(vocabData.hebrew, gender);
       if (hebrew && !completedVocabulary.includes(hebrew)) {
         setCompletedVocabulary([...completedVocabulary, hebrew]);
       }

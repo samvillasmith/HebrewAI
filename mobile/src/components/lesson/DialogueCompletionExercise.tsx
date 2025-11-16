@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { useGender } from '../../contexts/GenderContext';
+import { resolveGenderedText } from '../../utils/genderUtils';
 
 interface DialogueCompletionExerciseProps {
   item: {
@@ -20,10 +22,11 @@ interface DialogueCompletionExerciseProps {
 }
 
 export default function DialogueCompletionExercise({ item, onCorrect }: DialogueCompletionExerciseProps) {
+  const { gender } = useGender();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
 
-  const speakerHebrew = typeof item.speakerLine.hebrew === 'string' ? item.speakerLine.hebrew : item.speakerLine.hebrew.male;
+  const speakerHebrew = resolveGenderedText(item.speakerLine.hebrew, gender);
 
   const handleSelect = (index: number) => {
     setSelectedIndex(index);
@@ -50,7 +53,7 @@ export default function DialogueCompletionExercise({ item, onCorrect }: Dialogue
       <Text style={styles.promptText}>You:</Text>
 
       {item.options.map((option, index) => {
-        const hebrew = typeof option.hebrew === 'string' ? option.hebrew : option.hebrew.male;
+        const hebrew = resolveGenderedText(option.hebrew, gender);
         const isSelected = selectedIndex === index;
         const isCorrect = index === item.correctAnswer;
         const showCorrect = showFeedback && isCorrect;

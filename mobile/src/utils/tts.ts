@@ -14,8 +14,12 @@ export const speak = async (
   try {
     // Stop any currently playing audio
     if (currentSound) {
-      await currentSound.stopAsync();
-      await currentSound.unloadAsync();
+      try {
+        await currentSound.stopAsync();
+        await currentSound.unloadAsync();
+      } catch (err) {
+        console.error('Error stopping audio:', err);
+      }
       currentSound = null;
     }
 
@@ -49,10 +53,12 @@ export const speak = async (
       currentSound = sound;
 
       // Clean up when done
-      sound.setOnPlaybackStatusUpdate((status) => {
+      sound.setOnPlaybackStatusUpdate(async (status) => {
         if (status.isLoaded && status.didJustFinish) {
-          sound.unloadAsync();
-          currentSound = null;
+          if (currentSound) {
+            await currentSound.unloadAsync();
+            currentSound = null;
+          }
         }
       });
     };
@@ -66,8 +72,12 @@ export const speak = async (
 
 export const stopSpeaking = async () => {
   if (currentSound) {
-    await currentSound.stopAsync();
-    await currentSound.unloadAsync();
+    try {
+      await currentSound.stopAsync();
+      await currentSound.unloadAsync();
+    } catch (err) {
+      console.error('Error stopping audio:', err);
+    }
     currentSound = null;
   }
 };

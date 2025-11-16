@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { useGender } from '../../contexts/GenderContext';
+import { resolveGenderedText } from '../../utils/genderUtils';
 
 interface DialogueWithBlanksExerciseProps {
   item: {
@@ -17,6 +19,7 @@ interface DialogueWithBlanksExerciseProps {
 }
 
 export default function DialogueWithBlanksExercise({ item, onCorrect }: DialogueWithBlanksExerciseProps) {
+  const { gender } = useGender();
   const [answers, setAnswers] = useState<{ [key: number]: number }>({});
   const [showFeedback, setShowFeedback] = useState(false);
 
@@ -56,7 +59,7 @@ export default function DialogueWithBlanksExercise({ item, onCorrect }: Dialogue
           ) : (
             <View style={styles.blankOptions}>
               {turn.options?.map((option, optIdx) => {
-                const text = typeof option === 'string' ? option : option.male;
+                const text = resolveGenderedText(option, gender);
                 const isSelected = answers[index] === optIdx;
                 const isCorrect = optIdx === turn.correctAnswer;
                 const showCorrect = showFeedback && isCorrect;

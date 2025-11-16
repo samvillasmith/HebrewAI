@@ -57,8 +57,13 @@ export default function DashboardScreen({ navigation }: any) {
         streakDays: progressData.streak_days || 0,
         xpPoints: progressData.xp_points || 0,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading progress:', error);
+      // If user not found (404), keep default values
+      // This happens for brand new users who haven't completed any lessons yet
+      if (error?.response?.status === 404) {
+        console.log('New user - using default progress values');
+      }
     } finally {
       setLoading(false);
     }
@@ -81,12 +86,6 @@ export default function DashboardScreen({ navigation }: any) {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Welcome back! 👋</Text>
-        <Text style={styles.headerSubtitle}>Continue your Hebrew learning journey</Text>
-      </View>
-
       {/* Progress Stats */}
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
@@ -217,21 +216,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  header: {
-    padding: 20,
-    paddingTop: 60,
-    backgroundColor: '#ffffff',
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#6b7280',
   },
   statsContainer: {
     flexDirection: 'row',

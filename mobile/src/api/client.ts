@@ -38,3 +38,15 @@ export const updateLessonProgress = async (
   });
   return response.data;
 };
+
+export const fetchReviewWords = async (userId: string, limit: number = 20) => {
+  const response = await apiClient.get(`/api/vocabulary/review?user_id=${userId}&limit=${limit}`);
+  return response.data;
+};
+
+export const submitReviewResponse = async (wordId: string, quality: number) => {
+  const response = await apiClient.post(`/api/vocabulary/review/${wordId}`, {
+    quality,
+  });
+  return response.data;
+};
