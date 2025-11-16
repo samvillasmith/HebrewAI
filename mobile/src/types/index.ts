@@ -25,3 +25,22 @@ export interface Course {
   totalWords: number;
   lessons: Lesson[];
 }
+
+export interface VocabularyItem {
+  id: string;
+  hebrew: string;
+  english: string;
+  transliteration?: string;
+  category: string;
+  level: string;
+  exampleSentence?: string;
+  repetitions: number;
+  nextReview: string;
+}
+
+export interface ReviewStats {
+  total_words: number;
+  due_for_review: number;
+  learning: number;
+  mastered: number;
+}

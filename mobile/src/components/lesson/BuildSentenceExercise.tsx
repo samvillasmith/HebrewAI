@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { speak } from '../../utils/tts';
 import { Ionicons } from '@expo/vector-icons';
 import { useGender } from '../../contexts/GenderContext';
+import { resolveGenderedText } from '../../utils/genderUtils';
 
 interface BuildSentenceExerciseProps {
   item: {
@@ -21,9 +22,9 @@ export default function BuildSentenceExercise({ item, onCorrect }: BuildSentence
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
 
-  const text = typeof item.text === 'string' ? item.text : item.text.male;
-  const words = item.words.map(w => typeof w === 'string' ? w : w.male);
-  const correctOrder = item.correctOrder.map(w => typeof w === 'string' ? w : w.male);
+  const text = resolveGenderedText(item.text, gender);
+  const words = item.words.map(w => resolveGenderedText(w, gender));
+  const correctOrder = item.correctOrder.map(w => resolveGenderedText(w, gender));
 
   useEffect(() => {
     const shuffled = [...words].sort(() => Math.random() - 0.5);
