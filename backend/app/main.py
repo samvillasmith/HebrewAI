@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 import os
 from dotenv import load_dotenv
 
-from app.api import chat, lessons, users, courses, vocabulary, tts
+from app.api import chat, lessons, users, courses, vocabulary, tts, curriculum
 from app.core.database import prisma
 
 load_dotenv()
@@ -46,6 +46,7 @@ app.include_router(lessons.router, prefix="/api/lessons", tags=["Lessons"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(vocabulary.router, prefix="/api/vocabulary", tags=["Vocabulary"])
 app.include_router(tts.router, prefix="/api/tts", tags=["Text-to-Speech"])
+app.include_router(curriculum.router, prefix="/api/curriculum", tags=["Curriculum"])
 
 
 @app.get("/")

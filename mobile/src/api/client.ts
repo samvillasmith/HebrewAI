@@ -50,3 +50,31 @@ export const submitReviewResponse = async (wordId: string, quality: number) => {
   });
   return response.data;
 };
+
+// Curriculum API functions
+export const fetchCurriculumLevels = async (userId?: string) => {
+  const params = userId ? `?user_id=${userId}` : '';
+  const response = await apiClient.get(`/api/curriculum/levels${params}`);
+  return response.data;
+};
+
+export const fetchCurriculumLevel = async (level: string, userId?: string) => {
+  const params = userId ? `?user_id=${userId}` : '';
+  const response = await apiClient.get(`/api/curriculum/levels/${level}${params}`);
+  return response.data;
+};
+
+export const fetchCourses = async (level?: string, userId?: string) => {
+  const params = new URLSearchParams();
+  if (level) params.append('level', level);
+  if (userId) params.append('user_id', userId);
+  const queryString = params.toString();
+  const response = await apiClient.get(`/api/courses${queryString ? '?' + queryString : ''}`);
+  return response.data;
+};
+
+export const fetchCourseDetail = async (courseId: string, userId?: string) => {
+  const params = userId ? `?user_id=${userId}` : '';
+  const response = await apiClient.get(`/api/courses/${courseId}${params}`);
+  return response.data;
+};

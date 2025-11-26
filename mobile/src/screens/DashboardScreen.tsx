@@ -9,77 +9,179 @@ import {
 } from 'react-native';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { useFocusEffect } from '@react-navigation/native';
-import { fetchUserProgress, fetchVocabularyStats } from '../api/client';
-import { a1Curriculum } from '../data/curriculum';
-import { UserProgress, Course } from '../types';
+import { fetchUserProgress, fetchVocabularyStats, fetchCurriculumLevel } from '../api/client';
+import { UserProgress } from '../types';
 
-export default function DashboardScreen({ navigation }: any) {
+interface LessonData {
+  id: string;
+  courseId: string;
+  lessonNumber: string;
+  title: string;
+  duration: number;
+  vocabularyCount: number;
+  theme: string;
+  objectives: string[];
+  isLocked: boolean;
+  isCompleted?: boolean;
+}
+
+interface CourseData {
+  id: string;
+  level: string;
+  courseNumber: number;
+  title: string;
+  description: string;
+  totalLessons: number;
+  totalWords: number;
+  estimatedHours: number;
+  isLocked: boolean;
+  progress?: number;
+  isCompleted?: boolean;
+  lessons: LessonData[];
+}
+
+interface CurriculumLevelData {
+  level: string;
+  title: string;
+  description: string;
+  totalWords: number;
+  totalLessons: number;
+  courses: CourseData[];
+  progress?: number;
+}
+
+export default function DashboardScreen({ navigation, route }: any) {
   const { userId } = useAuth();
   const { user } = useUser();
   const [loading, setLoading] = useState(true);
+  const [currentCurriculum, setCurrentCurriculum] = useState<CurriculumLevelData | null>(null);
+
+  // Get selected level from route params, default to user's current level
+  const selectedLevel = route?.params?.selectedLevel;
+
   const [userProgress, setUserProgress] = useState<UserProgress>({
-    currentLevel: 'A1',
+    currentLevel: selectedLevel || 'A1',
     lessonsCompleted: 0,
-    totalLessons: 35,
+    totalLessons: 77,
     wordsLearned: 0,
-    totalWords: 700,
+    totalWords: 580,
     streakDays: 0,
     xpPoints: 0,
   });
-  const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
 
-  const loadUserProgress = useCallback(async () => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
-
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const progressData = await fetchUserProgress(userId);
-      const vocabData = await fetchVocabularyStats(userId);
 
-      if (progressData.lesson_progress) {
-        const completed = new Set(
-          progressData.lesson_progress
-            .filter((lp: any) => lp.is_completed)
-            .map((lp: any) => lp.lesson_id)
-        );
-        setCompletedLessons(completed);
+      // Determine which level to load
+      const levelToLoad = selectedLevel || userProgress.currentLevel || 'A1';
+
+      // Fetch curriculum level from API
+      const curriculumData = await fetchCurriculumLevel(levelToLoad, userId || undefined);
+      setCurrentCurriculum(curriculumData);
+
+      // Update total lessons/words from API data
+      const newTotalLessons = curriculumData.totalLessons;
+      const newTotalWords = curriculumData.totalWords;
+
+      if (userId) {
+        const progressData = await fetchUserProgress(userId);
+        const vocabData = await fetchVocabularyStats(userId);
+
+        setUserProgress({
+          currentLevel: progressData.current_level || levelToLoad,
+          lessonsCompleted: progressData.lessons_complete || 0,
+          totalLessons: newTotalLessons,
+          wordsLearned: vocabData.total_words || 0,
+          totalWords: newTotalWords,
+          streakDays: progressData.streak_days || 0,
+          xpPoints: progressData.xp_points || 0,
+        });
+      } else {
+        setUserProgress(prev => ({
+          ...prev,
+          currentLevel: levelToLoad,
+          totalLessons: newTotalLessons,
+          totalWords: newTotalWords,
+        }));
       }
-
-      setUserProgress({
-        currentLevel: progressData.current_level || 'A1',
-        lessonsCompleted: progressData.lessons_complete || 0,
-        totalLessons: 35,
-        wordsLearned: vocabData.total_words || 0,
-        totalWords: 700,
-        streakDays: progressData.streak_days || 0,
-        xpPoints: progressData.xp_points || 0,
-      });
     } catch (error: any) {
-      console.error('Error loading progress:', error);
-      // If user not found (404), keep default values
-      // This happens for brand new users who haven't completed any lessons yet
+      console.error('Error loading data:', error);
       if (error?.response?.status === 404) {
-        console.log('New user - using default progress values');
+        console.log('New user or data not found - using default values');
       }
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, selectedLevel, userProgress.currentLevel]);
 
-  // Refresh data whenever the screen comes into focus (e.g., after completing a lesson)
+  // Refresh data whenever the screen comes into focus or level changes
   useFocusEffect(
     useCallback(() => {
-      loadUserProgress();
-    }, [loadUserProgress])
+      loadData();
+    }, [loadData])
   );
 
-  if (loading) {
+  // Reload when selected level changes
+  useEffect(() => {
+    if (selectedLevel) {
+      loadData();
+    }
+  }, [selectedLevel]);
+
+  // Calculate completion stats from curriculum data
+  const displayLevel = selectedLevel || userProgress.currentLevel;
+
+  const totalLessonsInLevel = currentCurriculum?.totalLessons || 0;
+  const completedLessonsInLevel = currentCurriculum?.courses.reduce((sum, course) => {
+    return sum + course.lessons.filter(lesson => lesson.isCompleted).length;
+  }, 0) || 0;
+  const isLevelComplete = completedLessonsInLevel === totalLessonsInLevel && totalLessonsInLevel > 0;
+
+  const handleAdvanceLevel = async () => {
+    // Update user progress to next level
+    let newLevel = userProgress.currentLevel;
+    let newTotalLessons = userProgress.totalLessons;
+    let newTotalWords = userProgress.totalWords;
+
+    if (userProgress.currentLevel === 'A1') {
+      newLevel = 'A2';
+      newTotalLessons = 67;
+      newTotalWords = 500;
+    } else if (userProgress.currentLevel === 'A2') {
+      newLevel = 'B1';
+      newTotalLessons = 135;
+      newTotalWords = 1000;
+    } else if (userProgress.currentLevel === 'B1') {
+      newLevel = 'B2';
+      newTotalLessons = 267;
+      newTotalWords = 2000;
+    }
+
+    setUserProgress({
+      ...userProgress,
+      currentLevel: newLevel,
+      totalLessons: newTotalLessons,
+      totalWords: newTotalWords,
+    });
+
+    // Update backend
+    if (userId) {
+      try {
+        // TODO: Implement backend API call to update user's current level
+        // await updateUserLevel(userId, newLevel);
+        console.log(`Advanced to level ${newLevel}`);
+      } catch (error) {
+        console.error('Error updating level:', error);
+      }
+    }
+  };
+
+  if (loading || !currentCurriculum) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#6366f1" />
+        <Text style={styles.loadingText}>Loading curriculum...</Text>
       </View>
     );
   }
@@ -90,12 +192,12 @@ export default function DashboardScreen({ navigation }: any) {
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
           <Text style={styles.statLabel}>Current Level</Text>
-          <Text style={styles.statValue}>{userProgress.currentLevel}</Text>
+          <Text style={styles.statValue}>{displayLevel}</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statLabel}>Lessons</Text>
           <Text style={styles.statValue}>
-            {userProgress.lessonsCompleted}/{userProgress.totalLessons}
+            {completedLessonsInLevel}/{totalLessonsInLevel}
           </Text>
         </View>
         <View style={styles.statCard}>
@@ -137,14 +239,50 @@ export default function DashboardScreen({ navigation }: any) {
         </TouchableOpacity>
       </View>
 
+      {/* Certificate & Level Advancement */}
+      {isLevelComplete && (userProgress.currentLevel === 'A1' || userProgress.currentLevel === 'A2' || userProgress.currentLevel === 'B1') && !selectedLevel && (
+        <View style={styles.certificateSection}>
+          <View style={styles.certificateCard}>
+            <Text style={styles.certificateEmoji}>🎓</Text>
+            <Text style={styles.certificateTitle}>Congratulations!</Text>
+            <Text style={styles.certificateMessage}>
+              You've completed all {totalLessonsInLevel} lessons in {userProgress.currentLevel}!
+            </Text>
+            <TouchableOpacity
+              style={styles.certificateButton}
+              onPress={handleAdvanceLevel}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.certificateButtonText}>
+                Get Certificate & Advance to {userProgress.currentLevel === 'A1' ? 'A2' : userProgress.currentLevel === 'A2' ? 'B1' : 'B2'} →
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
       {/* Courses */}
       <View style={styles.coursesSection}>
-        <Text style={styles.sectionTitle}>A1 Level - Newcomer/Beginner</Text>
-        {a1Curriculum.map((course) => {
+        {selectedLevel && selectedLevel !== userProgress.currentLevel && (
+          <View style={styles.levelNotice}>
+            <Text style={styles.levelNoticeText}>
+              You're viewing {displayLevel} courses
+            </Text>
+            <TouchableOpacity
+              style={styles.backToMyLevelButton}
+              onPress={() => navigation.setParams({ selectedLevel: undefined })}
+            >
+              <Text style={styles.backToMyLevelText}>Back to My Level ({userProgress.currentLevel})</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        <Text style={styles.sectionTitle}>{currentCurriculum.title}</Text>
+        <Text style={styles.sectionDescription}>{currentCurriculum.description}</Text>
+        {currentCurriculum.courses.map((course) => {
           const completedInCourse = course.lessons.filter((lesson) =>
-            completedLessons.has(lesson.id)
+            lesson.isCompleted
           ).length;
-          const progress = (completedInCourse / course.totalLessons) * 100;
+          const progress = course.totalLessons > 0 ? (completedInCourse / course.totalLessons) * 100 : 0;
 
           return (
             <View key={course.id} style={styles.courseCard}>
@@ -168,7 +306,7 @@ export default function DashboardScreen({ navigation }: any) {
 
               {/* Lessons */}
               {course.lessons.map((lesson) => {
-                const isCompleted = completedLessons.has(lesson.id);
+                const isCompleted = lesson.isCompleted || false;
                 return (
                   <TouchableOpacity
                     key={lesson.id}
@@ -189,7 +327,7 @@ export default function DashboardScreen({ navigation }: any) {
                       <View style={styles.lessonInfo}>
                         <Text style={styles.lessonTitle}>{lesson.title}</Text>
                         <Text style={styles.lessonMeta}>
-                          {lesson.duration} • {lesson.vocabularyCount} words
+                          {lesson.duration} min • {lesson.vocabularyCount} words
                         </Text>
                       </View>
                     </View>
@@ -216,6 +354,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#f0f4f8',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#6b7280',
   },
   statsContainer: {
     flexDirection: 'row',
@@ -252,7 +396,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#1f2937',
+    marginBottom: 8,
+  },
+  sectionDescription: {
+    fontSize: 14,
+    color: '#6b7280',
     marginBottom: 16,
+    lineHeight: 20,
   },
   courseCard: {
     backgroundColor: '#ffffff',
@@ -429,6 +579,80 @@ const styles = StyleSheet.create({
   featuredButtonText: {
     color: '#ffffff',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  certificateSection: {
+    padding: 16,
+    paddingTop: 0,
+  },
+  certificateCard: {
+    backgroundColor: '#f0fdf4',
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 2,
+    borderColor: '#86efac',
+    alignItems: 'center',
+    shadowColor: '#22c55e',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  certificateEmoji: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  certificateTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#15803d',
+    marginBottom: 8,
+  },
+  certificateMessage: {
+    fontSize: 16,
+    color: '#166534',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 22,
+  },
+  certificateButton: {
+    backgroundColor: '#22c55e',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    width: '100%',
+    alignItems: 'center',
+  },
+  certificateButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  levelNotice: {
+    backgroundColor: '#eef2ff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#c7d2fe',
+  },
+  levelNoticeText: {
+    fontSize: 14,
+    color: '#4338ca',
+    fontWeight: '600',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  backToMyLevelButton: {
+    backgroundColor: '#6366f1',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  backToMyLevelText: {
+    color: '#ffffff',
+    fontSize: 14,
     fontWeight: '600',
   },
 });

@@ -6,6 +6,7 @@ import { useAuth, useOAuth, useUser } from '@clerk/clerk-expo';
 import DashboardScreen from '../screens/DashboardScreen';
 import LessonScreen from '../screens/LessonScreen';
 import VocabularyScreen from '../screens/VocabularyScreen';
+import ExploreCoursesScreen from '../screens/ExploreCoursesScreen';
 import { SignedIn, SignedOut } from '@clerk/clerk-expo';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Modal, Alert } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
@@ -139,6 +140,16 @@ function TabNavigator() {
           tabBarLabel: 'Learn',
           tabBarIcon: ({ color }) => (
             <Text style={{ fontSize: 24 }}>📚</Text>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="ExploreTab"
+        component={ExploreCoursesScreen}
+        options={{
+          tabBarLabel: 'Explore',
+          tabBarIcon: ({ color }) => (
+            <Text style={{ fontSize: 24 }}>🌟</Text>
           ),
         }}
       />

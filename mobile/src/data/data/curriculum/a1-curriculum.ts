@@ -1,11 +1,11 @@
-import { CurriculumLevel, Course } from '@/types/curriculum'
+import { CurriculumLevel, Course } from '../../../types/curriculum'
 
 export const a1Curriculum: CurriculumLevel = {
   level: 'A1',
   title: 'A1 Level - Newcomer/Beginner',
   description: 'Master the fundamentals of Hebrew - alphabet, basic vocabulary, and essential grammar',
-  totalWords: 700,
-  totalLessons: 35,
+  totalWords: 580,
+  totalLessons: 34,
   courses: [
     {
       id: 'course-1-alphabet',
